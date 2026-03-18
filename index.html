@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaainHome | Cloud Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="ccc-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">M</span>
+                <h1>MaainHome</h1>
+            </div>
+            <nav>
+                <a href="#" class="active">Kiosk Overview</a>
+                <a href="#">Health Check</a>
+                <a href="#">Security Keys</a>
+                <a href="#">Analytics</a>
+                <a href="#">System Settings</a>
+            </nav>
+            <div class="sidebar-footer">
+                <span class="status-indicator online"></span>
+                <span>System Secure</span>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div class="header-info">
+                    <h2>Kiosk Overview</h2>
+                    <p>Monitoring <span id="active-count">0</span> Active Stations</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-primary" id="add-kiosk">+ Register Station</button>
+                    <div class="user-profile">Admin</div>
+                </div>
+            </header>
+
+            <!-- Stats Bar -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Kiosks</h3>
+                    <p class="stat-value" id="stat-total">3</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Online</h3>
+                    <p class="stat-value text-green" id="stat-online">2</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Maintenance</h3>
+                    <p class="stat-value text-gold" id="stat-pending">1</p>
+                </div>
+            </section>
+
+            <!-- Kiosk Table -->
+            <section class="kiosk-list">
+                <table id="kiosk-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Uptime</th>
+                            <th>Last Heartbeat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kiosk-body">
+                        <!-- Mocked data will be injected here -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>
