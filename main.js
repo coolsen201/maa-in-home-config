@@ -1,7 +1,7 @@
 const kiosks = [
-    { id: 'KHUB-NYC-001', location: 'New York, USA', status: 'online', uptime: '14d 2h', heartbeat: 'Active Now' },
-    { id: 'KHUB-LDN-002', location: 'London, UK', status: 'pending', uptime: '0h 0m', heartbeat: '5m ago' },
-    { id: 'KHUB-TKY-003', location: 'Tokyo, JP', status: 'online', uptime: '2d 18h', heartbeat: 'Active Now' }
+    { id: 'KHUB-NYC-001', location: 'New York, USA', status: 'online', uptime: '14d 2h', heartbeat: 'Active Now', meeting: 'https://meet.jit.si/maainhome-VSWNNFMO' },
+    { id: 'KHUB-LDN-002', location: 'London, UK', status: 'pending', uptime: '0h 0m', heartbeat: '5m ago', meeting: '-' },
+    { id: 'KHUB-TKY-003', location: 'Tokyo, JP', status: 'online', uptime: '2d 18h', heartbeat: 'Active Now', meeting: 'https://meet.jit.si/maainhome-VSWNNFMO' }
 ];
 
 function renderTable() {
