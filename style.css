@@ -230,3 +230,31 @@ td {
 .btn-icon:hover {
     text-decoration: underline;
 }
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+.code-badge {
+    background: rgba(255, 215, 0, 0.1);
+    color: var(--primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 700;
+    border: 1px solid var(--primary);
+}
+
+.section-header {
+    background: var(--glass);
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.section-header h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+}

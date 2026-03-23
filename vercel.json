@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/*.go",
+      "use": "@vercel/go"
+    }
+  ],
+  "routes": [
+    { "src": "/api/register", "dest": "/api/register.go" },
+    { "src": "/api/approve",  "dest": "/api/approve.go"  },
+    { "src": "/api/status",   "dest": "/api/status.go"   },
+    { "src": "/api/pending",  "dest": "/api/pending.go"  },
+    { "src": "/api/tunnels",  "dest": "/api/tunnels.js"  },
+    { "src": "/(.*)",         "dest": "/index.html"      }
+  ]
+}

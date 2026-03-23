@@ -59,6 +59,9 @@
 
             <!-- Kiosk Table -->
             <section class="kiosk-list">
+                <header class="section-header">
+                    <h3>Active Stations</h3>
+                </header>
                 <table id="kiosk-table">
                     <thead>
                         <tr>
@@ -72,6 +75,26 @@
                     </thead>
                     <tbody id="kiosk-body">
                         <!-- Mocked data will be injected here -->
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Pending Registrations -->
+            <section class="kiosk-list" style="margin-top: 2rem; border-color: var(--primary);">
+                <header class="section-header" style="background: rgba(255, 215, 0, 0.05);">
+                    <h3 style="color: var(--primary);">Pending Registrations</h3>
+                </header>
+                <table id="pending-table">
+                    <thead>
+                        <tr>
+                            <th>UUID</th>
+                            <th>PIN (from Kiosk Screen)</th>
+                            <th>Detected At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-body">
+                        <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>
                     </tbody>
                 </table>
             </section>
