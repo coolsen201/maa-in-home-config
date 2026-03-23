@@ -35,7 +35,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
@@ -47,14 +46,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("KV_REDIS_URL"),
-		Password: os.Getenv("KV_REST_API_TOKEN"),
-	})
+	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	if err != nil {
+		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		return
+	}
+	rdb := redis.NewClient(opt)
 	defer rdb.Close()
 	ctx := context.Background()
 
-	// Fetch existing record
 	key := fmt.Sprintf("kiosk:%s", req.UUID)
 	val, err := rdb.Get(ctx, key).Result()
 	if err != nil {
@@ -68,26 +68,22 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify PIN
 	if record.PIN != req.PIN {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]any{
 			"approved": false,
-			"error":    "PIN does not match. Please check the code on the kiosk screen.",
+			"error":    "PIN does not match. Check the code on the kiosk screen.",
 		})
 		return
 	}
 
-	// Generate secure key
 	secureKey := uuid.New().String()
 	record.Status = "approved"
 	record.SecureKey = secureKey
 	record.LastSeen = time.Now().UTC().Format(time.RFC3339)
 
 	data, _ := json.Marshal(record)
-	// Keep approved record for 7 days
 	rdb.Set(ctx, key, data, 7*24*time.Hour)
-	// Remove from pending set
 	rdb.SRem(ctx, "kiosks:pending", req.UUID)
 
 	json.NewEncoder(w).Encode(map[string]any{

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -22,11 +23,12 @@ type KioskRecord struct {
 	LastSeen string `json:"lastSeen"`
 }
 
-func getRedisClient() *redis.Client {
-	return redis.NewClient(&redis.Options{
-		Addr:     getEnv("KV_REDIS_URL", ""),
-		Password: getEnv("KV_REST_API_TOKEN", ""),
-	})
+func getRedisClient() (*redis.Client, error) {
+	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	if err != nil {
+		return nil, err
+	}
+	return redis.NewClient(opt), nil
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +41,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
@@ -47,7 +48,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UUID == "" || req.PIN == "" {
-		http.Error(w, `{"error":"Invalid request body. uuid and pin are required."}`, http.StatusBadRequest)
+		http.Error(w, `{"error":"uuid and pin are required"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -57,37 +58,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		Status:   "pending",
 		LastSeen: time.Now().UTC().Format(time.RFC3339),
 	}
-
 	data, _ := json.Marshal(record)
-	ctx := context.Background()
-	rdb := getRedisClient()
-	defer rdb.Close()
 
-	// Store with 24h expiry (if not approved, auto-clean)
-	key := fmt.Sprintf("kiosk:%s", req.UUID)
-	if err := rdb.Set(ctx, key, data, 24*time.Hour).Err(); err != nil {
-		http.Error(w, `{"error":"Failed to store registration"}`, http.StatusInternalServerError)
+	rdb, err := getRedisClient()
+	if err != nil {
+		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
 		return
 	}
+	defer rdb.Close()
 
-	// Track in a set for listing
+	ctx := context.Background()
+	key := fmt.Sprintf("kiosk:%s", req.UUID)
+	rdb.Set(ctx, key, data, 24*time.Hour)
 	rdb.SAdd(ctx, "kiosks:pending", req.UUID)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{"success": true, "uuid": req.UUID})
-}
-
-func getEnv(key, fallback string) string {
-	if val, ok := lookupEnv(key); ok {
-		return val
-	}
-	return fallback
-}
-
-func lookupEnv(key string) (string, bool) {
-	// Uses os.LookupEnv under the hood via Vercel's injected env vars
-	val := ""
-	// This will be resolved by the Go build with os package
-	_ = key
-	return val, val != ""
 }

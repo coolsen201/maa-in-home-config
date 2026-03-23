@@ -26,14 +26,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("KV_REDIS_URL"),
-		Password: os.Getenv("KV_REST_API_TOKEN"),
-	})
+	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	if err != nil {
+		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		return
+	}
+	rdb := redis.NewClient(opt)
 	defer rdb.Close()
 	ctx := context.Background()
 
-	// Get all UUIDs in pending set
 	pendingUUIDs, err := rdb.SMembers(ctx, "kiosks:pending").Result()
 	if err != nil || len(pendingUUIDs) == 0 {
 		json.NewEncoder(w).Encode([]KioskRecord{})
@@ -45,25 +46,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		key := fmt.Sprintf("kiosk:%s", uid)
 		val, err := rdb.Get(ctx, key).Result()
 		if err != nil {
-			// Expired/gone — clean up
 			rdb.SRem(ctx, "kiosks:pending", uid)
 			continue
 		}
 		var record KioskRecord
 		if err := json.Unmarshal([]byte(val), &record); err == nil {
-			// Never expose the PIN to the CCC — admin must read it off the kiosk screen
-			pending = append(pending, KioskRecord{
-				UUID:     record.UUID,
-				PIN:      record.PIN, // Admin sees this to compare with kiosk screen
-				Status:   record.Status,
-				LastSeen: record.LastSeen,
-			})
+			pending = append(pending, record)
 		}
 	}
 
 	if pending == nil {
 		pending = []KioskRecord{}
 	}
-
 	json.NewEncoder(w).Encode(pending)
 }

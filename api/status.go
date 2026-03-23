@@ -33,17 +33,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("KV_REDIS_URL"),
-		Password: os.Getenv("KV_REST_API_TOKEN"),
-	})
+	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	if err != nil {
+		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		return
+	}
+	rdb := redis.NewClient(opt)
 	defer rdb.Close()
 	ctx := context.Background()
 
 	key := fmt.Sprintf("kiosk:%s", kioskUUID)
 	val, err := rdb.Get(ctx, key).Result()
 	if err != nil {
-		// Not found = not registered yet
 		json.NewEncoder(w).Encode(map[string]any{"status": "not_found"})
 		return
 	}
@@ -58,8 +59,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if record.Status == "approved" {
 		resp["secure_key"] = record.SecureKey
-		// Hide PIN from response once approved
 	}
-
 	json.NewEncoder(w).Encode(resp)
 }
