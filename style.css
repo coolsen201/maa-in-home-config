@@ -236,14 +236,17 @@ td {
     font-size: 0.8rem;
 }
 
-.code-badge {
-    background: rgba(255, 215, 0, 0.1);
-    color: var(--primary);
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: monospace;
+.pin-display {
+    font-size: 1.6rem;
     font-weight: 700;
-    border: 1px solid var(--primary);
+    letter-spacing: 0.4rem;
+    color: var(--primary);
+    font-family: monospace;
+    background: rgba(255, 215, 0, 0.08);
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    display: inline-block;
 }
 
 .section-header {
