@@ -2,15 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/*.go",
+      "src": "api/**/*.go",
       "use": "@vercel/go"
     }
   ],
   "routes": [
-    { "src": "/api/register", "dest": "/api/register.go" },
-    { "src": "/api/approve",  "dest": "/api/approve.go"  },
-    { "src": "/api/status",   "dest": "/api/status.go"   },
-    { "src": "/api/pending",  "dest": "/api/pending.go"  },
+    { "src": "/api/register", "dest": "/api/register/index.go" },
+    { "src": "/api/approve",  "dest": "/api/approve/index.go"  },
+    { "src": "/api/status",   "dest": "/api/status/index.go"   },
+    { "src": "/api/pending",  "dest": "/api/pending/index.go"  },
     { "src": "/api/tunnels",  "dest": "/api/tunnels.js"  },
     { "src": "/(.*)",         "dest": "/index.html"      }
   ]
