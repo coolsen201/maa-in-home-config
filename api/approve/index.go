@@ -3,26 +3,27 @@ package approve
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
+	"cloud.google.com/go/firestore"
+	"github.com/coolsen201/maa-in-home-config/shared"
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-type ApproveRequest struct {
+type ApprovePayload struct {
 	UUID string `json:"uuid"`
 	PIN  string `json:"pin"`
 }
 
 type KioskRecord struct {
-	UUID      string `json:"uuid"`
-	PIN       string `json:"pin"`
-	Status    string `json:"status"`
-	SecureKey string `json:"secure_key,omitempty"`
-	LastSeen  string `json:"lastSeen"`
+	UUID      string `json:"uuid" firestore:"uuid"`
+	PIN       string `json:"pin" firestore:"pin"`
+	Status    string `json:"status" firestore:"status"`
+	SecureKey string `json:"secure_key,omitempty" firestore:"secure_key,omitempty"`
+	LastSeen  string `json:"lastSeen" firestore:"lastSeen"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -40,55 +41,70 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req ApproveRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UUID == "" || req.PIN == "" {
+	var payload ApprovePayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, `{"error":"Invalid payload"}`, http.StatusBadRequest)
+		return
+	}
+	if payload.UUID == "" || payload.PIN == "" {
 		http.Error(w, `{"error":"uuid and pin are required"}`, http.StatusBadRequest)
 		return
 	}
 
-	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := shared.GetFirestoreClient(ctx)
 	if err != nil {
-		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Storage not configured"})
 		return
 	}
-	rdb := redis.NewClient(opt)
-	defer rdb.Close()
-	ctx := context.Background()
+	defer client.Close()
 
-	key := fmt.Sprintf("kiosk:%s", req.UUID)
-	val, err := rdb.Get(ctx, key).Result()
+	docRef := client.Collection("kiosks").Doc(payload.UUID)
+	docSnap, err := docRef.Get(ctx)
+	
+	if status.Code(err) == codes.NotFound {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Kiosk not found or expired"})
+		return
+	}
 	if err != nil {
-		http.Error(w, `{"error":"Kiosk not found or expired"}`, http.StatusNotFound)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to read kiosk record"})
 		return
 	}
 
 	var record KioskRecord
-	if err := json.Unmarshal([]byte(val), &record); err != nil {
-		http.Error(w, `{"error":"Corrupted record"}`, http.StatusInternalServerError)
+	if err := docSnap.DataTo(&record); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to parse kiosk record"})
 		return
 	}
 
-	if record.PIN != req.PIN {
+	if record.PIN != payload.PIN {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{
-			"approved": false,
-			"error":    "PIN does not match. Check the code on the kiosk screen.",
-		})
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "PIN mismatch"})
 		return
 	}
 
 	secureKey := uuid.New().String()
-	record.Status = "approved"
-	record.SecureKey = secureKey
-	record.LastSeen = time.Now().UTC().Format(time.RFC3339)
 
-	data, _ := json.Marshal(record)
-	rdb.Set(ctx, key, data, 7*24*time.Hour)
-	rdb.SRem(ctx, "kiosks:pending", req.UUID)
+	_, err = docRef.Update(ctx, []firestore.Update{
+		{Path: "status", Value: "approved"},
+		{Path: "secure_key", Value: secureKey},
+	})
+	
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to update status"})
+		return
+	}
 
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{
-		"approved":   true,
-		"uuid":       req.UUID,
+		"success":    true,
 		"secure_key": secureKey,
 	})
 }

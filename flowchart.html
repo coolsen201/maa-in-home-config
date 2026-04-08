@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaainHome Flowchart</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .mermaid { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 1200px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="mermaid">
+flowchart TD
+    %% ── KIOSK SIDE ──────────────────────────────────
+    subgraph KIOSK ["🖥️ Kiosk App (maainhome.in — Electron)"]
+        K1([Boot / Launch]) --> K2{Has SecureKey\nin local storage?}
+        K2 -- Yes --> K3[/api/status?uuid=...\nPoll every 30s/]
+        K3 --> K4{Status?}
+        K4 -- approved --> K5[🟢 Launch Active\nIntercom Services]
+        K4 -- not_found --> K6[Re-register]
+        K2 -- No --> K7[Generate UUID v4\n+ Random 6-digit PIN]
+        K7 --> K8[Display PIN on Screen\n+ Show QR Code]
+        K8 --> K9[POST /api/register\nuuid + pin]
+        K9 --> K10{Registered OK?}
+        K10 -- success --> K11[Poll /api/status\nevery 10s]
+        K10 -- error --> K12[Show error\nRetry in 30s]
+        K11 --> K4
+        K6 --> K7
+    end
+
+    %% ── CLOUD CONTROL CENTER ─────────────────────────
+    subgraph CCC ["☁️ Cloud Control Center (maainhome-ccc — Vercel + Go)"]
+        C1([Admin opens\nmaa-in-home-config.vercel.app]) --> C2[GET /api/pending\nPoll every 10s]
+        C2 --> C3{Any pending\nkiosks?}
+        C3 -- None --> C2
+        C3 -- Has entries --> C4[Show table:\nUUID · PIN · Detected At]
+        C4 --> C5[Admin clicks\n✅ Approve]
+        C5 --> C6[Prompt: Enter PIN\nshown on kiosk screen]
+        C6 --> C7{PIN matches?}
+        C7 -- Mismatch --> C8[Show error\n'Check kiosk screen']
+        C8 --> C6
+        C7 -- Match --> C9[POST /api/approve\nuuid + pin]
+        C9 --> C10[Generate SecureKey UUID]
+        C10 --> C11[Update Redis:\nstatus = approved\nsecure_key = ...KEY\nTTL = 7 days]
+        C11 --> C12[Remove UUID from\nkiosks:pending set]
+        C12 --> C13[✅ Show SecureKey\nto Admin]
+        C2 -.->|GET /api/health| C14[🔍 Health Check]
+    end
+
+    %% ── REDIS / VERCEL KV ────────────────────────────
+    subgraph STORE ["🗄️ Storage (Upstash Redis via KV_URL)"]
+        R1[(kiosk:UUID\nJSON record\nTTL: 24h → 7d on approve)]
+        R2[(kiosks:pending\nRedis SET of UUIDs)]
+    end
+
+    %% ── CONNECTIONS ──────────────────────────────────
+    K9 -->|Writes| R1
+    K9 -->|SAdd| R2
+    C2 -->|SMembers + Get| R2
+    C2 -->|Get each| R1
+    C9 -->|Set + SRem| R1
+    C9 -->|SRem| R2
+    K11 -->|Get kiosk:UUID| R1
+
+    %% ── STYLING ──────────────────────────────────────
+    classDef kiosk fill:#1a1a2e,stroke:#FFD700,color:#fff
+    classDef ccc fill:#0f3460,stroke:#00FF9D,color:#fff
+    classDef store fill:#16213e,stroke:#e94560,color:#fff
+    classDef decision fill:#533483,stroke:#e2d9f3,color:#fff
+    classDef ok fill:#065535,stroke:#00FF9D,color:#fff
+    classDef err fill:#7b0d1e,stroke:#FF4B2B,color:#fff
+
+    class K1,K7,K8,K9,K11,K6 kiosk
+    class K5 ok
+    class K12 err
+    class C1,C2,C4,C5,C6,C9,C10,C11,C12,C13,C14 ccc
+    class K2,K4,K10,C3,C7 decision
+    class R1,R2 store
+    </div>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>

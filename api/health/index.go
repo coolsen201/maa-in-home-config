@@ -4,68 +4,55 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/coolsen201/maa-in-home-config/shared"
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
 
-	kvURL := os.Getenv("KV_URL")
-	if kvURL == "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{
-			"ok":    false,
-			"error": "KV_URL environment variable is not set",
-			"redis": "not_configured",
-		})
-		return
-	}
+	start := time.Now()
 
-	opt, err := redis.ParseURL(kvURL)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{
-			"ok":    false,
-			"error": "KV_URL is invalid: " + err.Error(),
-			"redis": "invalid_url",
-		})
-		return
-	}
-
-	// Short timeout so health check doesn't hang
-	opt.DialTimeout = 5 * time.Second
-	opt.ReadTimeout = 5 * time.Second
-	opt.WriteTimeout = 5 * time.Second
-
-	rdb := redis.NewClient(opt)
-	defer rdb.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	start := time.Now()
-	_, pingErr := rdb.Ping(ctx).Result()
+	client, err := shared.GetFirestoreClient(ctx)
+	
 	latency := time.Since(start).Milliseconds()
 
-	if pingErr != nil {
+	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]any{
 			"ok":      false,
-			"error":   "Redis PING failed: " + pingErr.Error(),
-			"redis":   "unreachable",
+			"db":      "unreachable",
+			"error":   "Firestore connection failed: " + err.Error(),
+			"latency": latency,
+		})
+		return
+	}
+	defer client.Close()
+
+	// Simple query to verify authentication rather than just client creation
+	_, err = client.Collection("kiosks").Limit(1).Documents(ctx).GetAll()
+	latency = time.Since(start).Milliseconds()
+
+	if err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]any{
+			"ok":      false,
+			"db":      "auth_failed",
+			"error":   "Firestore query failed: " + err.Error(),
 			"latency": latency,
 		})
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{
 		"ok":      true,
-		"redis":   "connected",
+		"db":      "connected",
 		"latency": latency,
-		"time":    time.Now().UTC().Format(time.RFC3339),
 	})
 }

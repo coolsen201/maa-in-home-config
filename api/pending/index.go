@@ -3,30 +3,19 @@ package pending
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"google.golang.org/api/iterator"
+
+	"github.com/coolsen201/maa-in-home-config/shared"
 )
 
 type KioskRecord struct {
-	UUID     string `json:"uuid"`
-	PIN      string `json:"pin"`
-	Status   string `json:"status"`
-	LastSeen string `json:"lastSeen"`
-}
-
-func getRedisClient() (*redis.Client, error) {
-	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
-	if err != nil {
-		return nil, err
-	}
-	opt.DialTimeout = 8 * time.Second
-	opt.ReadTimeout = 8 * time.Second
-	opt.WriteTimeout = 8 * time.Second
-	return redis.NewClient(opt), nil
+	UUID     string `json:"uuid" firestore:"uuid"`
+	PIN      string `json:"pin" firestore:"pin"`
+	Status   string `json:"status" firestore:"status"`
+	LastSeen string `json:"lastSeen" firestore:"lastSeen"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -38,40 +27,34 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rdb, err := getRedisClient()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := shared.GetFirestoreClient(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]any{"error": "Storage not configured: " + err.Error()})
 		return
 	}
-	defer rdb.Close()
+	defer client.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	pendingUUIDs, err := rdb.SMembers(ctx, "kiosks:pending").Result()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "Failed to read pending list: " + err.Error()})
-		return
-	}
-
-	if len(pendingUUIDs) == 0 {
-		json.NewEncoder(w).Encode([]KioskRecord{})
-		return
-	}
-
+	// Query for all kiosks with status "pending"
+	iter := client.Collection("kiosks").Where("status", "==", "pending").Documents(ctx)
+	
 	var pending []KioskRecord
-	for _, uid := range pendingUUIDs {
-		key := fmt.Sprintf("kiosk:%s", uid)
-		val, err := rdb.Get(ctx, key).Result()
-		if err != nil {
-			// Record expired, clean up from the set
-			rdb.SRem(ctx, "kiosks:pending", uid)
-			continue
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
 		}
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]any{"error": "Failed to read pending list: " + err.Error()})
+			return
+		}
+		
 		var record KioskRecord
-		if err := json.Unmarshal([]byte(val), &record); err == nil {
+		if err := doc.DataTo(&record); err == nil {
 			pending = append(pending, record)
 		}
 	}

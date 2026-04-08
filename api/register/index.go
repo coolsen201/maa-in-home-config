@@ -3,12 +3,10 @@ package register
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/coolsen201/maa-in-home-config/shared"
 )
 
 type RegisterRequest struct {
@@ -17,22 +15,10 @@ type RegisterRequest struct {
 }
 
 type KioskRecord struct {
-	UUID     string `json:"uuid"`
-	PIN      string `json:"pin"`
-	Status   string `json:"status"`
-	LastSeen string `json:"lastSeen"`
-}
-
-func getRedisClient() (*redis.Client, error) {
-	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid KV_URL: %w", err)
-	}
-	// Short timeouts to fail fast instead of hanging
-	opt.DialTimeout = 8 * time.Second
-	opt.ReadTimeout = 8 * time.Second
-	opt.WriteTimeout = 8 * time.Second
-	return redis.NewClient(opt), nil
+	UUID     string `json:"uuid" firestore:"uuid"`
+	PIN      string `json:"pin" firestore:"pin"`
+	Status   string `json:"status" firestore:"status"`
+	LastSeen string `json:"lastSeen" firestore:"lastSeen"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -62,9 +48,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		Status:   "pending",
 		LastSeen: time.Now().UTC().Format(time.RFC3339),
 	}
-	data, _ := json.Marshal(record)
 
-	rdb, err := getRedisClient()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := shared.GetFirestoreClient(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]any{
@@ -73,26 +61,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	defer rdb.Close()
+	defer client.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	key := fmt.Sprintf("kiosk:%s", req.UUID)
-	if err := rdb.Set(ctx, key, data, 24*time.Hour).Err(); err != nil {
+	if _, err := client.Collection("kiosks").Doc(req.UUID).Set(ctx, record); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]any{
 			"success": false,
 			"error":   "Failed to store kiosk record: " + err.Error(),
-		})
-		return
-	}
-
-	if err := rdb.SAdd(ctx, "kiosks:pending", req.UUID).Err(); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   "Failed to add to pending queue: " + err.Error(),
 		})
 		return
 	}
