@@ -7,11 +7,11 @@
     }
   ],
   "routes": [
+    { "src": "/api/health",   "dest": "/api/health/index.go"   },
     { "src": "/api/register", "dest": "/api/register/index.go" },
     { "src": "/api/approve",  "dest": "/api/approve/index.go"  },
     { "src": "/api/status",   "dest": "/api/status/index.go"   },
     { "src": "/api/pending",  "dest": "/api/pending/index.go"  },
-    { "src": "/api/tunnels",  "dest": "/api/tunnels.js"  },
-    { "src": "/(.*)",         "dest": "/index.html"      }
+    { "src": "/(.*)",         "dest": "/index.html"            }
   ]
 }

@@ -26,8 +26,12 @@ type KioskRecord struct {
 func getRedisClient() (*redis.Client, error) {
 	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid KV_URL: %w", err)
 	}
+	// Short timeouts to fail fast instead of hanging
+	opt.DialTimeout = 8 * time.Second
+	opt.ReadTimeout = 8 * time.Second
+	opt.WriteTimeout = 8 * time.Second
 	return redis.NewClient(opt), nil
 }
 
@@ -62,15 +66,36 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	rdb, err := getRedisClient()
 	if err != nil {
-		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   "Storage not configured: " + err.Error(),
+		})
 		return
 	}
 	defer rdb.Close()
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	key := fmt.Sprintf("kiosk:%s", req.UUID)
-	rdb.Set(ctx, key, data, 24*time.Hour)
-	rdb.SAdd(ctx, "kiosks:pending", req.UUID)
+	if err := rdb.Set(ctx, key, data, 24*time.Hour).Err(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   "Failed to store kiosk record: " + err.Error(),
+		})
+		return
+	}
+
+	if err := rdb.SAdd(ctx, "kiosks:pending", req.UUID).Err(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   "Failed to add to pending queue: " + err.Error(),
+		})
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{"success": true, "uuid": req.UUID})

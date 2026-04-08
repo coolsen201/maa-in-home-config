@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -35,12 +36,19 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
 	if err != nil {
-		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"error": "Storage not configured"})
 		return
 	}
+	opt.DialTimeout = 8 * time.Second
+	opt.ReadTimeout = 8 * time.Second
+	opt.WriteTimeout = 8 * time.Second
+
 	rdb := redis.NewClient(opt)
 	defer rdb.Close()
-	ctx := context.Background()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	key := fmt.Sprintf("kiosk:%s", kioskUUID)
 	val, err := rdb.Get(ctx, key).Result()

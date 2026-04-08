@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -17,6 +18,17 @@ type KioskRecord struct {
 	LastSeen string `json:"lastSeen"`
 }
 
+func getRedisClient() (*redis.Client, error) {
+	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	if err != nil {
+		return nil, err
+	}
+	opt.DialTimeout = 8 * time.Second
+	opt.ReadTimeout = 8 * time.Second
+	opt.WriteTimeout = 8 * time.Second
+	return redis.NewClient(opt), nil
+}
+
 func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "application/json")
@@ -26,17 +38,25 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	opt, err := redis.ParseURL(os.Getenv("KV_URL"))
+	rdb, err := getRedisClient()
 	if err != nil {
-		http.Error(w, `{"error":"Redis connection failed"}`, http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"error": "Storage not configured: " + err.Error()})
 		return
 	}
-	rdb := redis.NewClient(opt)
 	defer rdb.Close()
-	ctx := context.Background()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	pendingUUIDs, err := rdb.SMembers(ctx, "kiosks:pending").Result()
-	if err != nil || len(pendingUUIDs) == 0 {
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"error": "Failed to read pending list: " + err.Error()})
+		return
+	}
+
+	if len(pendingUUIDs) == 0 {
 		json.NewEncoder(w).Encode([]KioskRecord{})
 		return
 	}
@@ -46,6 +66,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		key := fmt.Sprintf("kiosk:%s", uid)
 		val, err := rdb.Get(ctx, key).Result()
 		if err != nil {
+			// Record expired, clean up from the set
 			rdb.SRem(ctx, "kiosks:pending", uid)
 			continue
 		}
