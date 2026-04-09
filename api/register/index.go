@@ -34,7 +34,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	record := shared.KioskRecord{
+		UUID:     req.UUID,
+		PIN:      req.PIN,
+		Status:   "pending",
 		LastSeen: time.Now().UTC().Format(time.RFC3339),
+	}
 
 	if err := shared.SetKiosk(req.UUID, record); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

@@ -64,7 +64,7 @@ async function approveKiosk(uuid, expectedPin) {
 
         const result = await response.json();
 
-        if (result.approved) {
+        if (result.success) {
             alert(`✅ Station approved!\nSecure Key: ${result.secure_key}\n\nThe kiosk will now automatically launch the MaainHome app.`);
             renderPendingTable();
         } else {
