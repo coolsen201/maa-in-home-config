@@ -1,7 +1,6 @@
 package register
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -12,13 +11,6 @@ import (
 type RegisterRequest struct {
 	UUID string `json:"uuid"`
 	PIN  string `json:"pin"`
-}
-
-type KioskRecord struct {
-	UUID     string `json:"uuid" firestore:"uuid"`
-	PIN      string `json:"pin" firestore:"pin"`
-	Status   string `json:"status" firestore:"status"`
-	LastSeen string `json:"lastSeen" firestore:"lastSeen"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -42,28 +34,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	record := KioskRecord{
+	record := shared.KioskRecord{
 		UUID:     req.UUID,
 		PIN:      req.PIN,
 		Status:   "pending",
-		LastSeen: time.Now().UTC().Format(time.RFC3339),
+		LastSeen: time.Now().UTC().Format(time.RFC3339Slice),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := shared.GetFirestoreClient(ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{
-			"success": false,
-			"error":   "Storage not configured: " + err.Error(),
-		})
-		return
-	}
-	defer client.Close()
-
-	if _, err := client.Collection("kiosks").Doc(req.UUID).Set(ctx, record); err != nil {
+	if err := shared.SetKiosk(req.UUID, record); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]any{
 			"success": false,

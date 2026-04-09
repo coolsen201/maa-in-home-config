@@ -1,29 +1,16 @@
 package approve
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
-	"cloud.google.com/go/firestore"
 	"github.com/coolsen201/maa-in-home-config/shared"
 	"github.com/google/uuid"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type ApprovePayload struct {
 	UUID string `json:"uuid"`
 	PIN  string `json:"pin"`
-}
-
-type KioskRecord struct {
-	UUID      string `json:"uuid" firestore:"uuid"`
-	PIN       string `json:"pin" firestore:"pin"`
-	Status    string `json:"status" firestore:"status"`
-	SecureKey string `json:"secure_key,omitempty" firestore:"secure_key,omitempty"`
-	LastSeen  string `json:"lastSeen" firestore:"lastSeen"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -51,35 +38,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := shared.GetFirestoreClient(ctx)
+	record, found, err := shared.GetKiosk(payload.UUID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Storage not configured"})
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to read kiosk record: " + err.Error()})
 		return
 	}
-	defer client.Close()
-
-	docRef := client.Collection("kiosks").Doc(payload.UUID)
-	docSnap, err := docRef.Get(ctx)
-	
-	if status.Code(err) == codes.NotFound {
+	if !found {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Kiosk not found or expired"})
-		return
-	}
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to read kiosk record"})
-		return
-	}
-
-	var record KioskRecord
-	if err := docSnap.DataTo(&record); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to parse kiosk record"})
 		return
 	}
 
@@ -91,14 +58,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	secureKey := uuid.New().String()
 
-	_, err = docRef.Update(ctx, []firestore.Update{
-		{Path: "status", Value: "approved"},
-		{Path: "secure_key", Value: secureKey},
+	err = shared.UpdateKioskFields(payload.UUID, map[string]string{
+		"status":     "approved",
+		"secure_key": secureKey,
 	})
 	
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to update status"})
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to update status: " + err.Error()})
 		return
 	}
 

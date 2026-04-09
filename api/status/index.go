@@ -1,23 +1,11 @@
 package status
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/coolsen201/maa-in-home-config/shared"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
-
-type KioskRecord struct {
-	UUID      string `json:"uuid" firestore:"uuid"`
-	PIN       string `json:"pin" firestore:"pin"`
-	Status    string `json:"status" firestore:"status"`
-	SecureKey string `json:"secure_key,omitempty" firestore:"secure_key,omitempty"`
-	LastSeen  string `json:"lastSeen" firestore:"lastSeen"`
-}
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -34,32 +22,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := shared.GetFirestoreClient(ctx)
+	record, found, err := shared.GetKiosk(kioskUUID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "Storage not configured"})
+		json.NewEncoder(w).Encode(map[string]any{"error": "Failed to check status: " + err.Error()})
 		return
 	}
-	defer client.Close()
 
-	docSnap, err := client.Collection("kiosks").Doc(kioskUUID).Get(ctx)
-	if status.Code(err) == codes.NotFound {
+	if !found {
 		json.NewEncoder(w).Encode(map[string]any{"status": "not_found"})
-		return
-	}
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "Failed to check status"})
-		return
-	}
-
-	var record KioskRecord
-	if err := docSnap.DataTo(&record); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "Failed to parse record"})
 		return
 	}
 
