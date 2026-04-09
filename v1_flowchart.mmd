@@ -1,0 +1,24 @@
+graph TD
+    subgraph "MaainHome Kiosk"
+        K_Start[Start Kiosk App] --> K_Check[Check Local Storage for secure_key]
+        K_Check -- "No Key" --> K_Reg[POST /api/register]
+        K_Reg --> K_Pin[Show 6-Digit PIN & UI]
+        K_Pin --> K_Poll[Poll GET /api/status?uuid=...]
+        K_Poll -- "Status: pending" --> K_Wait[Wait 5s] --> K_Poll
+        K_Poll -- "Status: approved" --> K_Save[Save secure_key]
+        K_Save --> K_Armed[Kiosk Paired & Active]
+        K_Check -- "Has Key" --> K_Armed
+    end
+
+    subgraph "Cloud Control Center (Vercel/Firestore)"
+        CCC_Reg[Receive Registration] --> CCC_Store[Store in Firestore collection 'kiosks']
+        CCC_Store --> CCC_Pending[Status: pending]
+        CCC_Status[Receive Status Check] --> CCC_Read[Read from Firestore]
+        CCC_Read --> CCC_Resp[Return status/secure_key]
+        CCC_Approve[Admin Approval POST /api/approve] --> CCC_Verify[Verify PIN]
+        CCC_Verify -- "Valid" --> CCC_Update[Update Status: approved + Generate secure_key]
+    end
+
+    K_Reg --> CCC_Reg
+    K_Poll --> CCC_Status
+    Admin[Admin/User] -->|Input PIN| CCC_Approve
