@@ -23,8 +23,21 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if approved == nil {
-		approved = []shared.KioskRecord{}
+	activeApproved := make([]shared.KioskRecord, 0, len(approved))
+	for _, record := range approved {
+		item := record
+		if err := shared.EnsureRecordNotExpired(&item); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]any{"error": "Failed to validate approved list: " + err.Error()})
+			return
+		}
+		if item.Status == "approved" {
+			activeApproved = append(activeApproved, item)
+		}
 	}
-	json.NewEncoder(w).Encode(approved)
+
+	if activeApproved == nil {
+		activeApproved = []shared.KioskRecord{}
+	}
+	json.NewEncoder(w).Encode(activeApproved)
 }

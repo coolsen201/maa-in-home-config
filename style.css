@@ -197,6 +197,23 @@ header p {
     line-height: 1.6;
 }
 
+.settings-label {
+    display: block;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-bottom: 0.65rem;
+}
+
+.settings-select {
+    width: 100%;
+    background: #111118;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    font: inherit;
+}
+
 .stat-card {
     background: var(--card);
     padding: 1.5rem;

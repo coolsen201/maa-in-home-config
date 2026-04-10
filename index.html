@@ -85,13 +85,32 @@
                             <tr>
                                 <th>UUID</th>
                                 <th>Status</th>
-                                <th>Approved At</th>
+                                <th>Expires At</th>
                                 <th>Approval Mode</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="approved-body">
                             <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="kiosk-list section-spacing" id="disabled-section">
+                    <header class="section-header">
+                        <h3>Disabled Devices</h3>
+                    </header>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>UUID</th>
+                                <th>Reason</th>
+                                <th>Disabled At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="disabled-body">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No disabled devices</td></tr>
                         </tbody>
                     </table>
                 </section>
@@ -188,6 +207,16 @@
                     <div class="detail-card">
                         <h3>Approval Workflow</h3>
                         <p class="detail-value" id="settings-approval-mode">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Approval Duration</h3>
+                        <label class="settings-label" for="approval-duration">Retention Window</label>
+                        <select id="approval-duration" class="settings-select">
+                            <option value="1">1 Day</option>
+                            <option value="7">7 Days</option>
+                            <option value="30" selected>30 Days</option>
+                            <option value="90">90 Days</option>
+                        </select>
                     </div>
                     <div class="detail-card detail-card-wide">
                         <h3>Onboarding</h3>

@@ -4,7 +4,7 @@ function formatTime(value) {
     if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleTimeString();
+    return date.toLocaleString();
 }
 
 function escapeHtml(value) {
@@ -47,16 +47,35 @@ function maskKey(key) {
     return `${key.slice(0, 8)}...${key.slice(-4)}`;
 }
 
+function getSelectedApprovalDays() {
+    const select = document.getElementById('approval-duration');
+    const selected = Number.parseInt(select?.value || '30', 10);
+    return Number.isNaN(selected) ? 30 : selected;
+}
+
+function saveApprovalDuration(days) {
+    localStorage.setItem('ccc_approval_duration_days', String(days));
+}
+
+function restoreApprovalDuration(defaultDays) {
+    const select = document.getElementById('approval-duration');
+    const stored = localStorage.getItem('ccc_approval_duration_days');
+    const value = stored || String(defaultDays || 30);
+    if (select) {
+        select.value = value;
+    }
+}
+
 function updateHealthView(health) {
     document.getElementById('health-ok').innerText = health.ok ? 'Healthy' : 'Issue';
     document.getElementById('health-db').innerText = health.db || '-';
     document.getElementById('health-latency').innerText = health.latency != null ? `${health.latency} ms` : '-';
     document.getElementById('health-approval-mode').innerText = health.approval_mode || '-';
     document.getElementById('settings-approval-mode').innerText = health.approval_mode || '-';
+    restoreApprovalDuration(health.default_approval_days || 30);
 }
 
-function updateAnalyticsView(pending, approved) {
-    const disabled = 0;
+function updateAnalyticsView(pending, approved, disabled) {
     document.getElementById('analytics-total').innerText = pending.length + approved.length + disabled;
     document.getElementById('analytics-approved').innerText = approved.length;
     document.getElementById('analytics-pending').innerText = pending.length;
@@ -83,15 +102,16 @@ async function renderPendingTable() {
     const pendingBody = document.getElementById('pending-body');
     
     try {
-        const [pending, approved, health] = await Promise.all([
+        const [pending, approved, disabled, health] = await Promise.all([
             fetchJson('/api/pending'),
             fetchJson('/api/approved'),
+            fetchJson('/api/disabled'),
             fetchJson('/api/health')
         ]);
 
         updateStats(pending || [], approved || []);
         updateHealthView(health || {});
-        updateAnalyticsView(pending || [], approved || []);
+        updateAnalyticsView(pending || [], approved || [], (disabled || []).length);
         updateKeysView(approved || []);
 
         if (!pending || pending.length === 0) {
@@ -113,6 +133,7 @@ async function renderPendingTable() {
         }
 
         renderApprovedTable(approved || []);
+        renderDisabledTable(disabled || []);
     } catch (e) {
         console.error('Error loading pending registrations:', e);
         pendingBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">Error loading registrations</td></tr>`;
@@ -132,11 +153,31 @@ function renderApprovedTable(approved) {
         <tr>
             <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
             <td><span class="status-badge approved">${escapeHtml(k.status)}</span></td>
-            <td>${formatTime(k.approvedAt)}</td>
+            <td>${formatTime(k.expiresAt)}</td>
             <td>${escapeHtml(k.approvalMode || '-')}</td>
             <td>
                 <button class="btn-icon" onclick="disableKiosk('${escapeHtml(k.uuid)}')">Disable</button>
                 <button class="btn-icon" style="color: var(--red); margin-left: 10px;" onclick="removeKiosk('${escapeHtml(k.uuid)}', 'approved')">Remove</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderDisabledTable(disabled) {
+    const disabledBody = document.getElementById('disabled-body');
+
+    if (!disabled || disabled.length === 0) {
+        disabledBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No disabled devices</td></tr>`;
+        return;
+    }
+
+    disabledBody.innerHTML = disabled.map((k) => `
+        <tr>
+            <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
+            <td><span class="status-badge disabled">${escapeHtml(k.disabledReason || 'disabled')}</span></td>
+            <td>${formatTime(k.disabledAt)}</td>
+            <td>
+                <button class="btn-icon" style="color: var(--red);" onclick="removeKiosk('${escapeHtml(k.uuid)}', 'disabled')">Remove</button>
             </td>
         </tr>
     `).join('');
@@ -155,14 +196,15 @@ async function approveKiosk(uuid, expectedPin) {
     }
 
     try {
+        const durationDays = getSelectedApprovalDays();
         const result = await fetchJson('/api/approve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uuid, pin: enteredPin.trim() })
+            body: JSON.stringify({ uuid, pin: enteredPin.trim(), duration_days: durationDays })
         });
 
         if (result.success) {
-            alert(`✅ Station approved!\nSecure Key: ${result.secure_key}\n\nThe kiosk will now automatically launch the MaainHome app.`);
+            alert(`✅ Station approved for ${result.duration_days} day(s)!\nSecure Key: ${result.secure_key}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`);
             renderPendingTable();
         } else {
             alert('❌ Approval failed: ' + (result.error || 'Unknown error'));
@@ -223,6 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('stat-total').innerText = '-';
     document.getElementById('stat-approved').innerText = '-';
+    document.getElementById('approval-duration').addEventListener('change', (event) => {
+        saveApprovalDuration(event.target.value);
+    });
     document.getElementById('add-kiosk').addEventListener('click', () => {
         alert('Stations appear here automatically after first boot and Wi-Fi connection.');
     });

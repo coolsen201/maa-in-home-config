@@ -10,8 +10,9 @@ import (
 )
 
 type ApprovePayload struct {
-	UUID string `json:"uuid"`
-	PIN  string `json:"pin"`
+	UUID         string `json:"uuid"`
+	PIN          string `json:"pin"`
+	DurationDays int    `json:"duration_days"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -57,23 +58,34 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if record.Status == "approved" && record.SecureKey != "" {
+	if err := shared.EnsureRecordNotExpired(&record); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to validate expiry: " + err.Error()})
+		return
+	}
+
+	if record.Status == "approved" && record.SecureKey != "" && !shared.IsExpired(record.ExpiresAt) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
-			"success":    true,
-			"secure_key": record.SecureKey,
-			"status":     record.Status,
+			"success":       true,
+			"secure_key":    record.SecureKey,
+			"status":        record.Status,
+			"expires_at":    record.ExpiresAt,
+			"duration_days": shared.NormalizeApprovalDays(payload.DurationDays),
 		})
 		return
 	}
 
+	durationDays := shared.NormalizeApprovalDays(payload.DurationDays)
 	secureKey := uuid.New().String()
 	approvedAt := time.Now().UTC().Format(time.RFC3339)
+	expiresAt := shared.CalculateExpiryFromNow(durationDays)
 
 	err = shared.UpdateKioskFields(payload.UUID, map[string]string{
 		"status":       "approved",
 		"secure_key":   secureKey,
 		"approvedAt":   approvedAt,
+		"expiresAt":    expiresAt,
 		"approvalMode": shared.GetApprovalMode(),
 		"approvedVia":  "ccc-panel",
 	})
@@ -86,9 +98,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":      true,
-		"secure_key":   secureKey,
-		"approved_at":  approvedAt,
+		"success":       true,
+		"secure_key":    secureKey,
+		"approved_at":   approvedAt,
+		"expires_at":    expiresAt,
+		"duration_days": durationDays,
 		"approval_mode": shared.GetApprovalMode(),
 	})
 }

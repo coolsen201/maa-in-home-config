@@ -20,8 +20,11 @@ type KioskRecord struct {
 	LastSeen  string `json:"lastSeen"`
 	FirstSeen string `json:"firstSeen,omitempty"`
 	ApprovedAt string `json:"approvedAt,omitempty"`
+	ExpiresAt string `json:"expiresAt,omitempty"`
 	ApprovalMode string `json:"approvalMode,omitempty"`
 	ApprovedVia string `json:"approvedVia,omitempty"`
+	DisabledAt string `json:"disabledAt,omitempty"`
+	DisabledReason string `json:"disabledReason,omitempty"`
 }
 
 // FirestoreDoc represents a Firestore document response
@@ -54,11 +57,20 @@ func ToFirestoreDoc(k KioskRecord) FirestoreDoc {
 	if k.ApprovedAt != "" {
 		fields["approvedAt"] = FirestoreValue{StringValue: k.ApprovedAt}
 	}
+	if k.ExpiresAt != "" {
+		fields["expiresAt"] = FirestoreValue{StringValue: k.ExpiresAt}
+	}
 	if k.ApprovalMode != "" {
 		fields["approvalMode"] = FirestoreValue{StringValue: k.ApprovalMode}
 	}
 	if k.ApprovedVia != "" {
 		fields["approvedVia"] = FirestoreValue{StringValue: k.ApprovedVia}
+	}
+	if k.DisabledAt != "" {
+		fields["disabledAt"] = FirestoreValue{StringValue: k.DisabledAt}
+	}
+	if k.DisabledReason != "" {
+		fields["disabledReason"] = FirestoreValue{StringValue: k.DisabledReason}
 	}
 	return FirestoreDoc{Fields: fields}
 }
@@ -73,8 +85,11 @@ func FromFirestoreDoc(doc FirestoreDoc) KioskRecord {
 		LastSeen:  doc.Fields["lastSeen"].StringValue,
 		FirstSeen: doc.Fields["firstSeen"].StringValue,
 		ApprovedAt: doc.Fields["approvedAt"].StringValue,
+		ExpiresAt: doc.Fields["expiresAt"].StringValue,
 		ApprovalMode: doc.Fields["approvalMode"].StringValue,
 		ApprovedVia: doc.Fields["approvedVia"].StringValue,
+		DisabledAt: doc.Fields["disabledAt"].StringValue,
+		DisabledReason: doc.Fields["disabledReason"].StringValue,
 	}
 }
 

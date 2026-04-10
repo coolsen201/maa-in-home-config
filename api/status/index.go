@@ -34,10 +34,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := shared.EnsureRecordNotExpired(&record); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{"error": "Failed to validate device expiry: " + err.Error()})
+		return
+	}
+
 	resp := map[string]any{
-		"status":   record.Status,
-		"uuid":     record.UUID,
-		"lastSeen": record.LastSeen,
+		"status":          record.Status,
+		"uuid":            record.UUID,
+		"lastSeen":        record.LastSeen,
+		"expires_at":      record.ExpiresAt,
+		"disabled_reason": record.DisabledReason,
 	}
 	if record.Status == "approved" {
 		resp["secure_key"] = record.SecureKey

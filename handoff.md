@@ -1,39 +1,65 @@
-# 🚀 MaainHome Cloud Control Center — Handoff Document
+# MaainHome CCC Handoff
 
-**Date:** April 8, 2026  
-**Focus:** Backend Migration from Upstash/Redis to Firebase Firestore.
+Updated on 10 April 2026.
 
-## 1. What Was Completed
-- **Architecture Shift:** We deprecated Redis and successfully rewrote all CCC API handlers (`/api/register`, `/api/approve`, `/api/pending`, `/api/status`, `/api/health`) to use the official Google Firebase SDK (`firebase.google.com/go/v4`).
-- **Code Refactoring:**
-  - Added `shared/firebase.go` to securely parse credentials.
-  - Used Firestore `.Set()`, `.Update()`, and `.Where()` querying equivalents instead of Redis key/set manipulation.
-- **Deployment:** The code was pushed to the `main` branch on GitHub and successfully deployed via Vercel.
-- **Environment:** The `FIREBASE_SERVICE_ACCOUNT` JSON key for `maainhome-ccc` was successfully added into the Vercel project environment variables.
+## What Is Live Now
+- Production URL: https://maainhome-ccc.vercel.app
+- First-boot station registration works through CCC.
+- Manual approval with PIN verification works.
+- Approval duration can be selected in CCC.
+- Approval expiry is persisted as `expiresAt`.
+- Expired approvals auto-transition to `disabled`.
+- Approved devices are visible in the panel.
+- Approved devices can be disabled or removed.
+- Sidebar sections now switch views on the live page.
+- Static UI routing on Vercel is fixed.
 
-## 2. Current Status (The Blocker)
-When hitting the `https://maa-in-home-config.vercel.app/api/health` endpoint, it successfully authenticates your JSON credentials, but receives the following Google Cloud error when it tries to run a query:
+## Current Architecture
+- Backend: Go functions deployed on Vercel
+- Storage: Firestore via REST API
+- Frontend: static HTML, CSS, JS served by Vercel
 
-```json
-{
-  "db": "auth_failed",
-  "error": "Firestore query failed: rpc error: code = PermissionDenied desc = Missing or insufficient permissions.",
-  "latency": 1722,
-  "ok": false
-}
-```
+## Current API Surface
+- `GET /api/health`
+- `POST /api/register`
+- `POST /api/approve`
+- `GET /api/status?uuid=...`
+- `GET /api/pending`
+- `GET /api/approved`
+- `GET /api/disabled`
+- `POST /api/disable`
+- `POST /api/remove`
 
-### Why is this happening?
-The Firebase Admin SDK automatically bypasses all database security rules. If it gets a `PermissionDenied` error, it almost always means:
-1. **The Firestore Database hasn't been created yet.** Going to the Firebase Console → left sidebar → **Firestore Database** → clicking **"Create Database"** hasn't been completed.
-2. **IAM Propagation Delay:** The service account was created *before* the Firestore database was initialized, and Google Cloud IAM is still propagating the "Datastore Owner" permissions to the service account (sometimes takes 5–10 minutes).
+## Current Approval Model
+- Stations self-register automatically.
+- CCC approval is human-only by default.
+- Secure key is generated on approval and retained for the device.
+- Re-registering an already approved station returns the existing key instead of resetting the record.
 
-## 3. Next Steps When You Log Back In
-1. Go to your [Firebase Console](https://console.firebase.google.com).
-2. Open the **maainhome-ccc** project.
-3. On the left sidebar, click **Build** -> **Firestore Database**.
-4. If it asks you to **Create Database**, create one (Native mode, any location). 
-5. Wait ~5 minutes, then visit `https://maa-in-home-config.vercel.app/api/health` again.
-6. Once it says `{"db":"connected", "ok":true}`, your Kiosks are ready to pair!
+## Current Audit Metadata Stored In Firestore
+- `firstSeen`
+- `lastSeen`
+- `approvedAt`
+- `expiresAt`
+- `approvalMode`
+- `approvedVia`
+- `disabledAt`
+- `disabledReason`
 
-*(All code and configurations are saved and pushed to GitHub. No further code edits are needed.)*
+## What Is Still Open
+- Real hardware verification of the expiry loop is still pending.
+- Firestore rules are still permissive.
+- GitHub may be behind the live deployment if network resolution blocks the final push.
+
+## Related Device-Side Folder
+- See `/home/senthil/websites/maainhome.in/README.md` for the station-side flow and pending work.
+
+## Recent Relevant Commits
+- `0b91528` feat: activate control center sidebar views
+- `ebbfdb8` feat: manage approved devices in control center
+- `6053727` fix: harden approval flow and vercel routing
+
+## Next Recommended Step
+1. Test a real station with a 1-day approval window.
+2. Confirm the device clears local registration and re-enters PIN approval after expiry.
+3. Decide whether to expose a disabled-device re-enable flow in CCC.

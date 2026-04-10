@@ -29,9 +29,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{
-		"ok":            true,
-		"db":            "connected",
-		"latency":       latency,
-		"approval_mode": shared.GetApprovalMode(),
+		"ok":                    true,
+		"db":                    "connected",
+		"latency":               latency,
+		"approval_mode":         shared.GetApprovalMode(),
+		"default_approval_days": shared.GetDefaultApprovalDays(),
 	})
 }

@@ -45,11 +45,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	now := time.Now().UTC().Format(time.RFC3339)
 	if err := shared.UpdateKioskFields(payload.UUID, map[string]string{
-		"status":       "disabled",
-		"approvalMode": record.ApprovalMode,
-		"approvedVia":  "ccc-panel-disabled",
-		"lastSeen":     time.Now().UTC().Format(time.RFC3339),
+		"status":         "disabled",
+		"approvalMode":   record.ApprovalMode,
+		"approvedVia":    "ccc-panel-disabled",
+		"lastSeen":       now,
+		"disabledAt":     now,
+		"disabledReason": "manual_disable",
 	}); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to disable kiosk: " + err.Error()})
