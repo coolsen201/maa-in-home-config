@@ -1,46 +1,94 @@
-// MaainHome CCC Console - Logic for Pending Registrations
+// MaainHome CCC Console - Logic for Pending and Approved Registrations
+
+function formatTime(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleTimeString();
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+async function fetchJson(url, options) {
+    const response = await fetch(url, options);
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Request failed');
+    }
+    return data;
+}
+
+function updateStats(pending, approved) {
+    document.getElementById('stat-pending').innerText = pending.length;
+    document.getElementById('stat-approved').innerText = approved.length;
+    document.getElementById('stat-total').innerText = pending.length + approved.length;
+    document.getElementById('active-count').innerText = approved.length;
+}
 
 async function renderPendingTable() {
     const pendingBody = document.getElementById('pending-body');
-    const pendingCountEl = document.getElementById('stat-pending');
     
     try {
-        const response = await fetch('/api/pending');
-        const pending = await response.json();
+        const [pending, approved] = await Promise.all([
+            fetchJson('/api/pending'),
+            fetchJson('/api/approved')
+        ]);
 
-        // Update stats
-        const count = pending ? pending.length : 0;
-        pendingCountEl.innerText = count;
-        document.getElementById('active-count').innerText = count;
+        updateStats(pending || [], approved || []);
 
         if (!pending || pending.length === 0) {
             pendingBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>`;
-            return;
+        } else {
+            pendingBody.innerHTML = pending.map(k => `
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
+                    <td>
+                      <span class="pin-display">${escapeHtml(k.pin)}</span>
+                    </td>
+                    <td>${formatTime(k.lastSeen)}</td>
+                    <td>
+                        <button class="btn-primary btn-sm" onclick="approveKiosk('${escapeHtml(k.uuid)}', '${escapeHtml(k.pin)}')">Approve</button>
+                        <button class="btn-icon" style="color: var(--red); margin-left: 10px;" onclick="removeKiosk('${escapeHtml(k.uuid)}', 'pending')">Remove</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        pendingBody.innerHTML = pending.map(k => `
-            <tr>
-                <td style="font-family: monospace; font-size: 0.85rem;">${k.uuid}</td>
-                <td>
-                  <span class="pin-display">${k.pin}</span>
-                </td>
-                <td>${new Date(k.lastSeen).toLocaleTimeString()}</td>
-                <td>
-                    <button class="btn-primary btn-sm" onclick="approveKiosk('${k.uuid}', '${k.pin}')">✅ Approve</button>
-                    <button class="btn-icon" style="color: var(--red); margin-left: 10px;" onclick="rejectKiosk('${k.uuid}')">✗ Reject</button>
-                </td>
-            </tr>
-        `).join('');
+        renderApprovedTable(approved || []);
     } catch (e) {
         console.error('Error loading pending registrations:', e);
         pendingBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">Error loading registrations</td></tr>`;
+        document.getElementById('approved-body').innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--red);">Error loading approved devices</td></tr>`;
     }
 }
 
-async function rejectKiosk(uuid) {
-    if (!confirm(`Reject station ${uuid}? This will remove it from the pending list.`)) return;
-    // Simply acknowledge — the record will auto-expire in 24h from Vercel KV
-    alert('Station rejected. It will be removed automatically.');
+function renderApprovedTable(approved) {
+    const approvedBody = document.getElementById('approved-body');
+
+    if (!approved || approved.length === 0) {
+        approvedBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices</td></tr>`;
+        return;
+    }
+
+    approvedBody.innerHTML = approved.map(k => `
+        <tr>
+            <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
+            <td><span class="status-badge approved">${escapeHtml(k.status)}</span></td>
+            <td>${formatTime(k.approvedAt)}</td>
+            <td>${escapeHtml(k.approvalMode || '-')}</td>
+            <td>
+                <button class="btn-icon" onclick="disableKiosk('${escapeHtml(k.uuid)}')">Disable</button>
+                <button class="btn-icon" style="color: var(--red); margin-left: 10px;" onclick="removeKiosk('${escapeHtml(k.uuid)}', 'approved')">Remove</button>
+            </td>
+        </tr>
+    `).join('');
 }
 
 async function approveKiosk(uuid, expectedPin) {
@@ -56,13 +104,11 @@ async function approveKiosk(uuid, expectedPin) {
     }
 
     try {
-        const response = await fetch('/api/approve', {
+        const result = await fetchJson('/api/approve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ uuid, pin: enteredPin.trim() })
         });
-
-        const result = await response.json();
 
         if (result.success) {
             alert(`✅ Station approved!\nSecure Key: ${result.secure_key}\n\nThe kiosk will now automatically launch the MaainHome app.`);
@@ -75,15 +121,51 @@ async function approveKiosk(uuid, expectedPin) {
     }
 }
 
+async function disableKiosk(uuid) {
+    if (!confirm(`Disable station ${uuid}?`)) return;
+
+    try {
+        const result = await fetchJson('/api/disable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid })
+        });
+
+        if (result.success) {
+            alert(`Station ${uuid} disabled.`);
+            renderPendingTable();
+        }
+    } catch (e) {
+        alert('Error disabling station: ' + e.message);
+    }
+}
+
+async function removeKiosk(uuid, source) {
+    if (!confirm(`Remove station ${uuid} from ${source} records?`)) return;
+
+    try {
+        const result = await fetchJson('/api/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid })
+        });
+
+        if (result.success) {
+            alert(`Station ${uuid} removed.`);
+            renderPendingTable();
+        }
+    } catch (e) {
+        alert('Error removing station: ' + e.message);
+    }
+}
+
 
 // renderTable() removed as it depended on broken Cloudflare Tunnels API
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Initial cleanup of old stats
     document.getElementById('stat-total').innerText = '-';
-    document.getElementById('stat-online').innerText = '-';
+    document.getElementById('stat-approved').innerText = '-';
     
     renderPendingTable();
-    // Poll for pending every 10s
     setInterval(renderPendingTable, 10000);
 });

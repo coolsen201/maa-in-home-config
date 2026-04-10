@@ -45,15 +45,15 @@
             <section class="stats-grid">
                 <div class="stat-card">
                     <h3>Total Kiosks</h3>
-                    <p class="stat-value" id="stat-total">3</p>
+                    <p class="stat-value" id="stat-total">-</p>
                 </div>
                 <div class="stat-card">
-                    <h3>Online</h3>
-                    <p class="stat-value text-green" id="stat-online">2</p>
+                    <h3>Approved</h3>
+                    <p class="stat-value text-green" id="stat-approved">-</p>
                 </div>
                 <div class="stat-card">
                     <h3>Maintenance</h3>
-                    <p class="stat-value text-gold" id="stat-pending">1</p>
+                    <p class="stat-value text-gold" id="stat-pending">-</p>
                 </div>
             </section>
 
@@ -73,6 +73,26 @@
                     </thead>
                     <tbody id="pending-body">
                         <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section class="kiosk-list section-spacing" id="approved-section">
+                <header class="section-header">
+                    <h3>Approved Devices</h3>
+                </header>
+                <table id="approved-table">
+                    <thead>
+                        <tr>
+                            <th>UUID</th>
+                            <th>Status</th>
+                            <th>Approved At</th>
+                            <th>Approval Mode</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approved-body">
+                        <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices</td></tr>
                     </tbody>
                 </table>
             </section>

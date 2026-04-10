@@ -176,6 +176,7 @@ header p {
 
 .text-green { color: var(--green); }
 .text-gold { color: var(--primary); }
+.text-red { color: var(--red); }
 
 /* Table */
 .kiosk-list {
@@ -217,6 +218,8 @@ td {
 .status-badge.online { color: var(--green); border: 1px solid var(--green); }
 .status-badge.offline { color: var(--red); border: 1px solid var(--red); }
 .status-badge.pending { color: var(--primary); border: 1px solid var(--primary); }
+.status-badge.approved { color: var(--green); border: 1px solid var(--green); }
+.status-badge.disabled { color: var(--red); border: 1px solid var(--red); }
 
 .btn-icon {
     background: transparent;
@@ -260,4 +263,8 @@ td {
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-dim);
+}
+
+.section-spacing {
+    margin-top: 2rem;
 }

@@ -163,8 +163,27 @@ func UpdateKioskFields(kioskUUID string, updates map[string]string) error {
 	return nil
 }
 
-// QueryPendingKiosks fetches all kiosks with status == "pending" via structured query
-func QueryPendingKiosks() ([]KioskRecord, error) {
+func DeleteKiosk(kioskUUID string) error {
+	url := fmt.Sprintf("%s/kiosks/%s", firestoreBaseURL, kioskUUID)
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("firestore request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("firestore error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+	return nil
+}
+
+func QueryKiosksByStatus(status string) ([]KioskRecord, error) {
 	query := map[string]any{
 		"structuredQuery": map[string]any{
 			"from": []map[string]any{
@@ -174,15 +193,15 @@ func QueryPendingKiosks() ([]KioskRecord, error) {
 				"fieldFilter": map[string]any{
 					"field": map[string]string{"fieldPath": "status"},
 					"op":    "EQUAL",
-					"value": map[string]string{"stringValue": "pending"},
+					"value": map[string]string{"stringValue": status},
 				},
 			},
 		},
 	}
 	body, _ := json.Marshal(query)
 
-	url := firestoreBaseURL + ":runQuery"
-	resp, err := httpClient.Post(url, "application/json", bytes.NewReader(body))
+	queryURL := firestoreBaseURL + ":runQuery"
+	resp, err := httpClient.Post(queryURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("firestore query failed: %v", err)
 	}
@@ -207,6 +226,38 @@ func QueryPendingKiosks() ([]KioskRecord, error) {
 		}
 	}
 	return kiosks, nil
+}
+
+func QueryAllKiosks() ([]KioskRecord, error) {
+	queryURL := fmt.Sprintf("%s/kiosks?pageSize=100", firestoreBaseURL)
+	resp, err := httpClient.Get(queryURL)
+	if err != nil {
+		return nil, fmt.Errorf("firestore request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("firestore error (status %d): %s", resp.StatusCode, string(respBody))
+	}
+
+	var result struct {
+		Documents []FirestoreDoc `json:"documents,omitempty"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode kiosk list: %v", err)
+	}
+
+	kiosks := make([]KioskRecord, 0, len(result.Documents))
+	for _, doc := range result.Documents {
+		kiosks = append(kiosks, FromFirestoreDoc(doc))
+	}
+	return kiosks, nil
+}
+
+// QueryPendingKiosks fetches all kiosks with status == "pending" via structured query
+func QueryPendingKiosks() ([]KioskRecord, error) {
+	return QueryKiosksByStatus("pending")
 }
 
 // HealthCheck tests basic Firestore connectivity

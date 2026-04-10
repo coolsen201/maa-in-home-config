@@ -24,6 +24,9 @@
     { "src": "/api/approve",  "dest": "/api/approve/index.go"  },
     { "src": "/api/status",   "dest": "/api/status/index.go"   },
     { "src": "/api/pending",  "dest": "/api/pending/index.go"  },
+    { "src": "/api/approved", "dest": "/api/approved/index.go" },
+    { "src": "/api/disable",  "dest": "/api/disable/index.go"  },
+    { "src": "/api/remove",   "dest": "/api/remove/index.go"   },
     { "handle": "filesystem" },
     { "src": "/(.*)",         "dest": "/index.html"            }
   ]
