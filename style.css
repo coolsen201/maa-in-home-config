@@ -115,6 +115,14 @@ nav a:hover, nav a.active {
     overflow-y: auto;
 }
 
+.view-section {
+    display: none;
+}
+
+.view-section.active {
+    display: block;
+}
+
 header {
     display: flex;
     justify-content: space-between;
@@ -154,6 +162,39 @@ header p {
     grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 3rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 1.5rem;
+}
+
+.detail-card {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.detail-card-wide {
+    grid-column: span 2;
+}
+
+.detail-card h3 {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+}
+
+.detail-value {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.detail-copy {
+    color: var(--text-dim);
+    line-height: 1.6;
 }
 
 .stat-card {
@@ -267,4 +308,15 @@ td {
 
 .section-spacing {
     margin-top: 2rem;
+}
+
+@media (max-width: 900px) {
+    .stats-grid,
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-card-wide {
+        grid-column: auto;
+    }
 }

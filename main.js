@@ -32,16 +32,67 @@ function updateStats(pending, approved) {
     document.getElementById('active-count').innerText = approved.length;
 }
 
+function setView(view) {
+    document.querySelectorAll('nav a[data-view]').forEach((link) => {
+        link.classList.toggle('active', link.dataset.view === view);
+    });
+    document.querySelectorAll('.view-section').forEach((section) => {
+        section.classList.toggle('active', section.id === `view-${view}`);
+    });
+}
+
+function maskKey(key) {
+    if (!key) return '-';
+    if (key.length <= 12) return key;
+    return `${key.slice(0, 8)}...${key.slice(-4)}`;
+}
+
+function updateHealthView(health) {
+    document.getElementById('health-ok').innerText = health.ok ? 'Healthy' : 'Issue';
+    document.getElementById('health-db').innerText = health.db || '-';
+    document.getElementById('health-latency').innerText = health.latency != null ? `${health.latency} ms` : '-';
+    document.getElementById('health-approval-mode').innerText = health.approval_mode || '-';
+    document.getElementById('settings-approval-mode').innerText = health.approval_mode || '-';
+}
+
+function updateAnalyticsView(pending, approved) {
+    const disabled = 0;
+    document.getElementById('analytics-total').innerText = pending.length + approved.length + disabled;
+    document.getElementById('analytics-approved').innerText = approved.length;
+    document.getElementById('analytics-pending').innerText = pending.length;
+    document.getElementById('analytics-disabled').innerText = disabled;
+}
+
+function updateKeysView(approved) {
+    const keysBody = document.getElementById('keys-body');
+    if (!approved || approved.length === 0) {
+        keysBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No approved keys</td></tr>`;
+        return;
+    }
+
+    keysBody.innerHTML = approved.map((k) => `
+        <tr>
+            <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
+            <td style="font-family: monospace;">${escapeHtml(maskKey(k.secure_key))}</td>
+            <td>${formatTime(k.approvedAt)}</td>
+        </tr>
+    `).join('');
+}
+
 async function renderPendingTable() {
     const pendingBody = document.getElementById('pending-body');
     
     try {
-        const [pending, approved] = await Promise.all([
+        const [pending, approved, health] = await Promise.all([
             fetchJson('/api/pending'),
-            fetchJson('/api/approved')
+            fetchJson('/api/approved'),
+            fetchJson('/api/health')
         ]);
 
         updateStats(pending || [], approved || []);
+        updateHealthView(health || {});
+        updateAnalyticsView(pending || [], approved || []);
+        updateKeysView(approved || []);
 
         if (!pending || pending.length === 0) {
             pendingBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>`;
@@ -163,9 +214,20 @@ async function removeKiosk(uuid, source) {
 // renderTable() removed as it depended on broken Cloudflare Tunnels API
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('nav a[data-view]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            setView(link.dataset.view);
+        });
+    });
+
     document.getElementById('stat-total').innerText = '-';
     document.getElementById('stat-approved').innerText = '-';
+    document.getElementById('add-kiosk').addEventListener('click', () => {
+        alert('Stations appear here automatically after first boot and Wi-Fi connection.');
+    });
     
+    setView('overview');
     renderPendingTable();
     setInterval(renderPendingTable, 10000);
 });

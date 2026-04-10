@@ -16,11 +16,11 @@
                 <h1>MaainHome</h1>
             </div>
             <nav>
-                <a href="#" class="active">Kiosk Overview</a>
-                <a href="#">Health Check</a>
-                <a href="#">Security Keys</a>
-                <a href="#">Analytics</a>
-                <a href="#">System Settings</a>
+                <a href="#overview" class="active" data-view="overview">Kiosk Overview</a>
+                <a href="#health" data-view="health">Health Check</a>
+                <a href="#keys" data-view="keys">Security Keys</a>
+                <a href="#analytics" data-view="analytics">Analytics</a>
+                <a href="#settings" data-view="settings">System Settings</a>
             </nav>
             <div class="sidebar-footer">
                 <span class="status-indicator online"></span>
@@ -30,71 +30,170 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <header>
-                <div class="header-info">
-                    <h2>Kiosk Overview</h2>
-                    <p>Monitoring <span id="active-count">0</span> Active Stations</p>
-                </div>
-                <div class="header-actions">
-                    <button class="btn-primary" id="add-kiosk">+ Register Station</button>
-                    <div class="user-profile">Admin</div>
-                </div>
-            </header>
+            <section class="view-section active" id="view-overview">
+                <header>
+                    <div class="header-info">
+                        <h2>Kiosk Overview</h2>
+                        <p>Monitoring <span id="active-count">0</span> Active Stations</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="add-kiosk">Stations Auto-Register</button>
+                        <div class="user-profile">Admin</div>
+                    </div>
+                </header>
 
-            <!-- Stats Bar -->
-            <section class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total Kiosks</h3>
-                    <p class="stat-value" id="stat-total">-</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Approved</h3>
-                    <p class="stat-value text-green" id="stat-approved">-</p>
-                </div>
-                <div class="stat-card">
-                    <h3>Maintenance</h3>
-                    <p class="stat-value text-gold" id="stat-pending">-</p>
-                </div>
+                <section class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Kiosks</h3>
+                        <p class="stat-value" id="stat-total">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Approved</h3>
+                        <p class="stat-value text-green" id="stat-approved">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Maintenance</h3>
+                        <p class="stat-value text-gold" id="stat-pending">-</p>
+                    </div>
+                </section>
+
+                <section class="kiosk-list" id="pending-section">
+                    <header class="section-header">
+                        <h3>Pending Registrations</h3>
+                    </header>
+                    <table id="pending-table">
+                        <thead>
+                            <tr>
+                                <th>UUID</th>
+                                <th>PIN (from Kiosk Screen)</th>
+                                <th>Detected At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-body">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="kiosk-list section-spacing" id="approved-section">
+                    <header class="section-header">
+                        <h3>Approved Devices</h3>
+                    </header>
+                    <table id="approved-table">
+                        <thead>
+                            <tr>
+                                <th>UUID</th>
+                                <th>Status</th>
+                                <th>Approved At</th>
+                                <th>Approval Mode</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approved-body">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices</td></tr>
+                        </tbody>
+                    </table>
+                </section>
             </section>
 
-            <!-- Pending Registrations -->
-            <section class="kiosk-list" id="pending-section">
-                <header class="section-header">
-                    <h3>Pending Registrations</h3>
+            <section class="view-section" id="view-health">
+                <header>
+                    <div class="header-info">
+                        <h2>Health Check</h2>
+                        <p>Live backend connectivity and approval mode</p>
+                    </div>
                 </header>
-                <table id="pending-table">
-                    <thead>
-                        <tr>
-                            <th>UUID</th>
-                            <th>PIN (from Kiosk Screen)</th>
-                            <th>Detected At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pending-body">
-                        <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>
-                    </tbody>
-                </table>
+                <section class="detail-grid">
+                    <div class="detail-card">
+                        <h3>API Status</h3>
+                        <p class="detail-value" id="health-ok">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Database</h3>
+                        <p class="detail-value" id="health-db">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Latency</h3>
+                        <p class="detail-value" id="health-latency">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Approval Mode</h3>
+                        <p class="detail-value" id="health-approval-mode">-</p>
+                    </div>
+                </section>
             </section>
 
-            <section class="kiosk-list section-spacing" id="approved-section">
-                <header class="section-header">
-                    <h3>Approved Devices</h3>
+            <section class="view-section" id="view-keys">
+                <header>
+                    <div class="header-info">
+                        <h2>Security Keys</h2>
+                        <p>Approved device keys for support and diagnostics</p>
+                    </div>
                 </header>
-                <table id="approved-table">
-                    <thead>
-                        <tr>
-                            <th>UUID</th>
-                            <th>Status</th>
-                            <th>Approved At</th>
-                            <th>Approval Mode</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="approved-body">
-                        <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices</td></tr>
-                    </tbody>
-                </table>
+                <section class="kiosk-list">
+                    <header class="section-header">
+                        <h3>Approved Keys</h3>
+                    </header>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>UUID</th>
+                                <th>Secure Key</th>
+                                <th>Approved At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keys-body">
+                            <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No approved keys</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+            </section>
+
+            <section class="view-section" id="view-analytics">
+                <header>
+                    <div class="header-info">
+                        <h2>Analytics</h2>
+                        <p>Simple deployment-level station metrics</p>
+                    </div>
+                </header>
+                <section class="detail-grid">
+                    <div class="detail-card">
+                        <h3>Total Stations</h3>
+                        <p class="detail-value" id="analytics-total">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Approved</h3>
+                        <p class="detail-value text-green" id="analytics-approved">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Pending</h3>
+                        <p class="detail-value text-gold" id="analytics-pending">-</p>
+                    </div>
+                    <div class="detail-card">
+                        <h3>Disabled</h3>
+                        <p class="detail-value text-red" id="analytics-disabled">-</p>
+                    </div>
+                </section>
+            </section>
+
+            <section class="view-section" id="view-settings">
+                <header>
+                    <div class="header-info">
+                        <h2>System Settings</h2>
+                        <p>Current backend-controlled onboarding behavior</p>
+                    </div>
+                </header>
+                <section class="detail-grid">
+                    <div class="detail-card">
+                        <h3>Approval Workflow</h3>
+                        <p class="detail-value" id="settings-approval-mode">-</p>
+                    </div>
+                    <div class="detail-card detail-card-wide">
+                        <h3>Onboarding</h3>
+                        <p class="detail-copy">Stations self-register on first boot after Wi-Fi connection and wait here for manual approval.</p>
+                    </div>
+                </section>
             </section>
         </main>
     </div>
