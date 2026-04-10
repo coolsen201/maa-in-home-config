@@ -4,6 +4,18 @@
     {
       "src": "api/**/*.go",
       "use": "@vercel/go"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.css",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -12,6 +24,7 @@
     { "src": "/api/approve",  "dest": "/api/approve/index.go"  },
     { "src": "/api/status",   "dest": "/api/status/index.go"   },
     { "src": "/api/pending",  "dest": "/api/pending/index.go"  },
+    { "handle": "filesystem" },
     { "src": "/(.*)",         "dest": "/index.html"            }
   ]
 }

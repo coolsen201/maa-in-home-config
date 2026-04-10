@@ -3,6 +3,7 @@ package approve
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/coolsen201/maa-in-home-config/shared"
 	"github.com/google/uuid"
@@ -56,11 +57,25 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if record.Status == "approved" && record.SecureKey != "" {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success":    true,
+			"secure_key": record.SecureKey,
+			"status":     record.Status,
+		})
+		return
+	}
+
 	secureKey := uuid.New().String()
+	approvedAt := time.Now().UTC().Format(time.RFC3339)
 
 	err = shared.UpdateKioskFields(payload.UUID, map[string]string{
-		"status":     "approved",
-		"secure_key": secureKey,
+		"status":       "approved",
+		"secure_key":   secureKey,
+		"approvedAt":   approvedAt,
+		"approvalMode": shared.GetApprovalMode(),
+		"approvedVia":  "ccc-panel",
 	})
 	
 	if err != nil {
@@ -71,7 +86,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]any{
-		"success":    true,
-		"secure_key": secureKey,
+		"success":      true,
+		"secure_key":   secureKey,
+		"approved_at":  approvedAt,
+		"approval_mode": shared.GetApprovalMode(),
 	})
 }

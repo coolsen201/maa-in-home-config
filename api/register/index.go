@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/coolsen201/maa-in-home-config/shared"
+	"github.com/google/uuid"
 )
 
 type RegisterRequest struct {
@@ -34,11 +35,56 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	existing, found, err := shared.GetKiosk(req.UUID)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success": false,
+			"error":   "Failed to read kiosk record: " + err.Error(),
+		})
+		return
+	}
+
+	if found && existing.Status == "approved" && existing.SecureKey != "" {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success":        true,
+			"uuid":           existing.UUID,
+			"status":         existing.Status,
+			"secure_key":     existing.SecureKey,
+			"approval_mode":  shared.GetApprovalMode(),
+			"already_paired": true,
+		})
+		return
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	status := "pending"
+	secureKey := ""
+	approvedAt := ""
+	approvedVia := ""
+	if shared.IsAutoApprovalEnabled() {
+		status = "approved"
+		secureKey = uuid.New().String()
+		approvedAt = now
+		approvedVia = "backend-auto"
+	}
+
+	firstSeen := now
+	if found && existing.FirstSeen != "" {
+		firstSeen = existing.FirstSeen
+	}
+
 	record := shared.KioskRecord{
-		UUID:     req.UUID,
-		PIN:      req.PIN,
-		Status:   "pending",
-		LastSeen: time.Now().UTC().Format(time.RFC3339),
+		UUID:      req.UUID,
+		PIN:       req.PIN,
+		Status:    status,
+		SecureKey: secureKey,
+		LastSeen:  now,
+		FirstSeen: firstSeen,
+		ApprovedAt: approvedAt,
+		ApprovalMode: shared.GetApprovalMode(),
+		ApprovedVia: approvedVia,
 	}
 
 	if err := shared.SetKiosk(req.UUID, record); err != nil {
@@ -51,5 +97,16 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]any{"success": true, "uuid": req.UUID})
+	response := map[string]any{
+		"success":       true,
+		"uuid":          req.UUID,
+		"status":        status,
+		"approval_mode": shared.GetApprovalMode(),
+		"first_seen":    firstSeen,
+		"last_seen":     now,
+	}
+	if secureKey != "" {
+		response["secure_key"] = secureKey
+	}
+	json.NewEncoder(w).Encode(response)
 }
