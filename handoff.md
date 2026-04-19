@@ -1,6 +1,5 @@
 # MaainHome CCC Handoff
-
-Updated on 10 April 2026.
+**Last Updated: 19 April 2026**
 
 ## What Is Live Now
 - Production URL: https://maainhome-ccc.vercel.app
@@ -46,20 +45,73 @@ Updated on 10 April 2026.
 - `disabledAt`
 - `disabledReason`
 
+---
+
+## WebRTC Signaling — Important Architecture Note
+
+**As of 19 April 2026**, the client application (`maahome.in`) no longer uses a WebSocket server for WebRTC signaling. The previous WebSocket server at `wss://api.maahome.in/ws` has been fully decommissioned.
+
+**Current approach**: All WebRTC signaling (offer, answer, ICE candidates) passes through the **Firestore `calls/{secureKey}` collection** via real-time `onSnapshot` listeners. Video and audio data itself travels directly peer-to-peer between devices and never passes through Firebase or any server.
+
+### Firestore Collections Used by Client App
+| Collection | Written By | Read By |
+|---|---|---|
+| `profiles/{userId}` | Client app on register | Client app on login |
+| `pairing_tokens/{code}` | Dashboard (QR generator) | Home Station (pairing) |
+| `calls/{secureKey}` | Home Station + Remote | Home Station + Remote |
+| `calls/{secureKey}/home_candidates` | Home Station | Remote Viewer |
+| `calls/{secureKey}/remote_candidates` | Remote Viewer | Home Station |
+| `call_logs/{docId}` | Client app (on call end) | Dashboard / Call History |
+
+### Required Firestore Security Rules
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /profiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /pairing_tokens/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /call_logs/{document} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid == resource.data.user_id;
+    }
+    match /calls/{secureKey} {
+      allow read, write: if request.auth != null;
+      match /home_candidates/{candidate} {
+        allow read, write: if request.auth != null;
+      }
+      match /remote_candidates/{candidate} {
+        allow read, write: if request.auth != null;
+      }
+    }
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+---
+
 ## What Is Still Open
 - Real hardware verification of the expiry loop is still pending.
-- Firestore rules are still permissive.
-- GitHub may be behind the live deployment if network resolution blocks the final push.
+- Re-enable flow for disabled devices is not yet in CCC UI.
 
 ## Related Device-Side Folder
-- See `/home/senthil/websites/maainhome.in/README.md` for the station-side flow and pending work.
+- See `/home/senthil/websites/maainhome.in/README.md` for the station-side flow.
+- See `/home/senthil/websites/maainhome.in/FIREBASE_SETUP.md` for full Firebase setup and WebRTC signaling documentation.
 
-## Recent Relevant Commits
-- `0b91528` feat: activate control center sidebar views
-- `ebbfdb8` feat: manage approved devices in control center
-- `6053727` fix: harden approval flow and vercel routing
+## Recent Relevant Commits (maainhome.in)
+- `35e68a4` feat: replace WebSocket signaling with Firebase Firestore for WebRTC — fix React hook order crash
+- `fb08fa9` docs: add comprehensive Firebase migration and setup guide
+- `b0b7b29` fix: remove /admin from SmartRedirect auth guard
+- `890c8c6` fix: add PIN gate on /admin
 
-## Next Recommended Step
-1. Test a real station with a 1-day approval window.
-2. Confirm the device clears local registration and re-enters PIN approval after expiry.
-3. Decide whether to expose a disabled-device re-enable flow in CCC.
+## Next Recommended Steps
+1. Test live video call between `/home` and `/remote`.
+2. Test real station with 1-day approval window — verify expiry loop clears local .env.
+3. Add "Re-enable device" button in CCC panel.
