@@ -75,23 +75,35 @@ func ToFirestoreDoc(k KioskRecord) FirestoreDoc {
 	return FirestoreDoc{Fields: fields}
 }
 
+// getFieldString safely extracts a string value from a Firestore field map
+func getFieldString(fields map[string]FirestoreValue, key string) string {
+	if fields == nil {
+		return ""
+	}
+	if val, ok := fields[key]; ok {
+		return val.StringValue
+	}
+	return ""
+}
+
 // FromFirestoreDoc parses a Firestore document into a KioskRecord
 func FromFirestoreDoc(doc FirestoreDoc) KioskRecord {
 	return KioskRecord{
-		UUID:      doc.Fields["uuid"].StringValue,
-		PIN:       doc.Fields["pin"].StringValue,
-		Status:    doc.Fields["status"].StringValue,
-		SecureKey: doc.Fields["secure_key"].StringValue,
-		LastSeen:  doc.Fields["lastSeen"].StringValue,
-		FirstSeen: doc.Fields["firstSeen"].StringValue,
-		ApprovedAt: doc.Fields["approvedAt"].StringValue,
-		ExpiresAt: doc.Fields["expiresAt"].StringValue,
-		ApprovalMode: doc.Fields["approvalMode"].StringValue,
-		ApprovedVia: doc.Fields["approvedVia"].StringValue,
-		DisabledAt: doc.Fields["disabledAt"].StringValue,
-		DisabledReason: doc.Fields["disabledReason"].StringValue,
+		UUID:           getFieldString(doc.Fields, "uuid"),
+		PIN:            getFieldString(doc.Fields, "pin"),
+		Status:         getFieldString(doc.Fields, "status"),
+		SecureKey:      getFieldString(doc.Fields, "secure_key"),
+		LastSeen:       getFieldString(doc.Fields, "lastSeen"),
+		FirstSeen:      getFieldString(doc.Fields, "firstSeen"),
+		ApprovedAt:     getFieldString(doc.Fields, "approvedAt"),
+		ExpiresAt:      getFieldString(doc.Fields, "expiresAt"),
+		ApprovalMode:   getFieldString(doc.Fields, "approvalMode"),
+		ApprovedVia:    getFieldString(doc.Fields, "approvedVia"),
+		DisabledAt:     getFieldString(doc.Fields, "disabledAt"),
+		DisabledReason: getFieldString(doc.Fields, "disabledReason"),
 	}
 }
+
 
 // SetKiosk creates or overwrites a kiosk document via the Firestore REST API
 func SetKiosk(kioskUUID string, record KioskRecord) error {
@@ -199,49 +211,20 @@ func DeleteKiosk(kioskUUID string) error {
 }
 
 func QueryKiosksByStatus(status string) ([]KioskRecord, error) {
-	query := map[string]any{
-		"structuredQuery": map[string]any{
-			"from": []map[string]any{
-				{"collectionId": "kiosks"},
-			},
-			"where": map[string]any{
-				"fieldFilter": map[string]any{
-					"field": map[string]string{"fieldPath": "status"},
-					"op":    "EQUAL",
-					"value": map[string]string{"stringValue": status},
-				},
-			},
-		},
-	}
-	body, _ := json.Marshal(query)
-
-	queryURL := firestoreBaseURL + ":runQuery"
-	resp, err := httpClient.Post(queryURL, "application/json", bytes.NewReader(body))
+	all, err := QueryAllKiosks()
 	if err != nil {
-		return nil, fmt.Errorf("firestore query failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		respBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("firestore error (status %d): %s", resp.StatusCode, string(respBody))
+		return nil, err
 	}
 
-	var results []struct {
-		Document *FirestoreDoc `json:"document,omitempty"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&results); err != nil {
-		return nil, fmt.Errorf("failed to decode query results: %v", err)
-	}
-
-	var kiosks []KioskRecord
-	for _, r := range results {
-		if r.Document != nil {
-			kiosks = append(kiosks, FromFirestoreDoc(*r.Document))
+	var filtered []KioskRecord
+	for _, k := range all {
+		if k.Status == status {
+			filtered = append(filtered, k)
 		}
 	}
-	return kiosks, nil
+	return filtered, nil
 }
+
 
 func QueryAllKiosks() ([]KioskRecord, error) {
 	queryURL := fmt.Sprintf("%s/kiosks?pageSize=100", firestoreBaseURL)
