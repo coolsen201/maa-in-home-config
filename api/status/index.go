@@ -43,6 +43,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{
 		"status":          record.Status,
 		"uuid":            record.UUID,
+		"home_number":     record.HomeNumber,
+		"user_id":         record.UserID,
 		"lastSeen":        record.LastSeen,
 		"expires_at":      record.ExpiresAt,
 		"disabled_reason": record.DisabledReason,

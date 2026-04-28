@@ -2,8 +2,40 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /kiosks/{kioskId} {
+    
+    // Allow kiosk registration and status checks
+    match /kiosks/{id} {
+      allow read, write: if true; 
+    }
+
+    // Allow kiosks to handle calls and candidates
+    match /calls/{callId} {
+      allow read, write: if true;
+      match /{allSubcollections=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Allow call logging
+    match /call_logs/{logId} {
+      allow read, write: if true;
+    }
+
+    // User profiles — kiosk reads by secure_key (no auth), only owner can write
+    match /profiles/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Pairing tokens used for QR/6-digit code pairing
+    match /pairing_tokens/{code} {
+      allow read, write: if true;
+    }
+
+    // User devices — track which user owns which device
+    match /user_devices/{docId} {
       allow read, write: if true;
     }
   }
 }
+

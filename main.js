@@ -91,6 +91,7 @@ function updateKeysView(approved) {
 
     keysBody.innerHTML = approved.map((k) => `
         <tr>
+            <td style="font-family: monospace; font-weight: bold; color: var(--gold);">${escapeHtml(k.home_number || 'N/A')}</td>
             <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
             <td style="font-family: monospace;">${escapeHtml(maskKey(k.secure_key))}</td>
             <td>${formatTime(k.approvedAt)}</td>
@@ -119,6 +120,7 @@ async function renderPendingTable() {
         } else {
             pendingBody.innerHTML = pending.map(k => `
                 <tr>
+                    <td style="font-family: monospace; font-weight: bold; color: var(--gold);">${escapeHtml(k.home_number || 'N/A')}</td>
                     <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
                     <td>
                       <span class="pin-display">${escapeHtml(k.pin)}</span>
@@ -151,7 +153,9 @@ function renderApprovedTable(approved) {
 
     approvedBody.innerHTML = approved.map(k => `
         <tr>
+            <td style="font-family: monospace; font-weight: bold; color: var(--green);">${escapeHtml(k.home_number || 'N/A')}</td>
             <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
+            <td style="font-size: 0.85rem;">${escapeHtml(k.user_id || 'Unclaimed')}</td>
             <td><span class="status-badge approved">${escapeHtml(k.status)}</span></td>
             <td>${formatTime(k.expiresAt)}</td>
             <td>${escapeHtml(k.approvalMode || '-')}</td>
@@ -173,6 +177,7 @@ function renderDisabledTable(disabled) {
 
     disabledBody.innerHTML = disabled.map((k) => `
         <tr>
+            <td style="font-family: monospace; font-weight: bold; color: var(--red);">${escapeHtml(k.home_number || 'N/A')}</td>
             <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
             <td><span class="status-badge disabled">${escapeHtml(k.disabledReason || 'disabled')}</span></td>
             <td>${formatTime(k.disabledAt)}</td>

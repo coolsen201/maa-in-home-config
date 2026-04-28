@@ -78,12 +78,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	durationDays := shared.NormalizeApprovalDays(payload.DurationDays)
 	secureKey := uuid.New().String()
+	homeNumber := shared.GenerateHomeNumber()
 	approvedAt := time.Now().UTC().Format(time.RFC3339)
 	expiresAt := shared.CalculateExpiryFromNow(durationDays)
 
 	err = shared.UpdateKioskFields(payload.UUID, map[string]string{
 		"status":       "approved",
 		"secure_key":   secureKey,
+		"home_number":  homeNumber,
 		"approvedAt":   approvedAt,
 		"expiresAt":    expiresAt,
 		"approvalMode": shared.GetApprovalMode(),
@@ -100,6 +102,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{
 		"success":       true,
 		"secure_key":    secureKey,
+		"home_number":   homeNumber,
 		"approved_at":   approvedAt,
 		"expires_at":    expiresAt,
 		"duration_days": durationDays,

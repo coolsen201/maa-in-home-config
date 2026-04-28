@@ -1,6 +1,8 @@
 package shared
 
 import (
+	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"time"
@@ -22,6 +24,20 @@ func GetApprovalMode() string {
 
 func IsAutoApprovalEnabled() bool {
 	return GetApprovalMode() == ApprovalModeAuto
+}
+
+// GenerateHomeNumber creates a short, user-friendly device identifier (e.g., "HM-AB12C")
+// Uses uppercase alphanumeric excluding I, O, L (confusing with 1, 0, l)
+func GenerateHomeNumber() string {
+	// Characters that are easy to distinguish: exclude I, L, O, 1, 0 to avoid confusion
+	charset := "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+	
+	rand.Seed(time.Now().UnixNano())
+	code := make([]byte, 5)
+	for i := 0; i < 5; i++ {
+		code[i] = charset[rand.Intn(len(charset))]
+	}
+	return fmt.Sprintf("HM-%s", string(code))
 }
 
 func GetDefaultApprovalDays() int {

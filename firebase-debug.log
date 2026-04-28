@@ -1,0 +1,52 @@
+[debug] [2026-04-20T10:52:44.662Z] ----------------------------------------------------------------------
+[debug] [2026-04-20T10:52:44.663Z] Command:       /usr/bin/node /home/senthil/.npm-global/bin/firebase deploy --only firestore:rules --project maainhome-ccc
+[debug] [2026-04-20T10:52:44.663Z] CLI Version:   15.8.0
+[debug] [2026-04-20T10:52:44.663Z] Platform:      linux
+[debug] [2026-04-20T10:52:44.663Z] Node Version:  v22.22.0
+[debug] [2026-04-20T10:52:44.663Z] Time:          Mon Apr 20 2026 16:22:44 GMT+0530 (India Standard Time)
+[debug] [2026-04-20T10:52:44.663Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-20T10:52:45.012Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-20T10:52:45.013Z] > authorizing via signed-in user (senthilvar135@gmail.com)
+[debug] [2026-04-20T10:52:45.013Z] [iam] checking project maainhome-ccc for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-04-20T10:52:45.013Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:45.013Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:45.014Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/maainhome-ccc:testIamPermissions [none]
+[debug] [2026-04-20T10:52:45.014Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/maainhome-ccc:testIamPermissions  x-goog-user-project=maainhome-ccc
+[debug] [2026-04-20T10:52:45.014Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/maainhome-ccc:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-04-20T10:52:45.500Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/maainhome-ccc:testIamPermissions 200
+[debug] [2026-04-20T10:52:45.500Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/maainhome-ccc:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'maainhome-ccc'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-20T10:52:45.502Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:45.502Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:45.502Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/maainhome-ccc/databases/(default) [none]
+[debug] [2026-04-20T10:52:45.862Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/maainhome-ccc/databases/(default) 200
+[debug] [2026-04-20T10:52:45.862Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/maainhome-ccc/databases/(default) {"name":"projects/maainhome-ccc/databases/(default)","uid":"4429ee34-4921-4e6e-be4c-6a590f863f7e","createTime":"2026-04-08T14:22:53.316864Z","updateTime":"2026-04-08T14:22:53.316864Z","locationId":"asia-south1","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-20T09:52:45.832938Z","appEngineIntegrationMode":"DISABLED","keyPrefix":"j","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IO6Yrcqh/JMDMN38i6mT4pMD"}
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-04-20T10:52:45.864Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:45.864Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:45.864Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/maainhome-ccc:test [none]
+[debug] [2026-04-20T10:52:45.864Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/maainhome-ccc:test [omitted]
+[debug] [2026-04-20T10:52:47.570Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/maainhome-ccc:test 200
+[debug] [2026-04-20T10:52:47.570Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/maainhome-ccc:test {}
+[info] ✔  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2026-04-20T10:52:47.573Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:47.573Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:47.574Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/releases pageSize=10&pageToken=
+[debug] [2026-04-20T10:52:48.911Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/releases 200
+[debug] [2026-04-20T10:52:48.911Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/releases {"releases":[{"name":"projects/maainhome-ccc/releases/cloud.firestore","rulesetName":"projects/maainhome-ccc/rulesets/fc0a9801-cd65-496f-93cd-e71b642486df","createTime":"2026-04-08T14:22:58.225299Z","updateTime":"2026-04-20T10:43:57.913216Z"}]}
+[debug] [2026-04-20T10:52:48.912Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:48.912Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:48.912Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/rulesets/fc0a9801-cd65-496f-93cd-e71b642486df [none]
+[debug] [2026-04-20T10:52:52.380Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/rulesets/fc0a9801-cd65-496f-93cd-e71b642486df 200
+[debug] [2026-04-20T10:52:52.380Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/rulesets/fc0a9801-cd65-496f-93cd-e71b642486df [omitted]
+[info] i  firestore: uploading rules firestore.rules... 
+[debug] [2026-04-20T10:52:52.383Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:52.383Z] Checked if tokens are valid: true, expires at: 1776684990227
+[debug] [2026-04-20T10:52:52.383Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/rulesets [none]
+[debug] [2026-04-20T10:52:52.383Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/maainhome-ccc/rulesets [omitted]

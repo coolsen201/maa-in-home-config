@@ -7,35 +7,79 @@
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
-        .mermaid { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 1200px; overflow-x: auto; }
+        .mermaid { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 1400px; overflow-x: auto; }
     </style>
 </head>
 <body>
     <div class="mermaid">
 flowchart TD
-    %% ── KIOSK SIDE ──────────────────────────────────
-    subgraph KIOSK ["🖥️ Kiosk App (maainhome.in — Electron)"]
-        K1([Boot / Launch]) --> K2{Has SecureKey\nin local storage?}
-        K2 -- Yes --> K3[/api/status?uuid=...\nPoll every 30s/]
-        K3 --> K4{Status?}
-        K4 -- approved --> K5[🟢 Launch Active\nIntercom Services]
-        K4 -- not_found --> K6[Re-register]
-        K2 -- No --> K7[Generate UUID v4\n+ Random 6-digit PIN]
-        K7 --> K8[Display PIN on Screen\n+ Show QR Code]
-        K8 --> K9[POST /api/register\nuuid + pin]
-        K9 --> K10{Registered OK?}
-        K10 -- success --> K11[Poll /api/status\nevery 10s]
-        K10 -- error --> K12[Show error\nRetry in 30s]
-        K11 --> K4
-        K6 --> K7
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  WEB APPLICATION ROUTING & FLOW
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph WEBAPP ["🌐 Web Application Routes"]
+        W1([User Opens App]) --> W2[/Route: / Landing Page/]
+        W2 --> W3{Logged In?}
+        W3 -- No --> W4[Login Form\nEmail + Password]
+        W4 --> W5{Valid?}
+        W5 -- No --> W4
+        W5 -- Yes --> W6[/Route: /dashboard Dashboard/]
+        W3 -- Yes --> W6
+        W6 --> W7[Profile Photos\nCall History\nPairing]
+        W7 --> W8[/Route: /hub Hub/]
+        W8 --> W9{Select Action}
+        W9 -- Home Station --> W10[/Route: /home HomeStation/]
+        W9 -- Remote View --> W11[/Route: /remote RemoteViewer/]
+        W9 -- Settings --> W12[Save Permanent\nSecure Key to\nlocalStorage]
+        W10 --> W13[WebRTC Intercom\nPairing + Video]
+        W11 --> W14[Remote Caller\nVideo Stream]
+        W12 --> W15[Auto-redirect\n/remote on next visit]
     end
 
-    %% ── CLOUD CONTROL CENTER ─────────────────────────
-    subgraph CCC ["☁️ Cloud Control Center (maainhome-ccc — Vercel + Go)"]
-        C1([Admin opens\nmaa-in-home-config.vercel.app]) --> C2[GET /api/pending\nPoll every 10s]
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 1: USER REGISTRATION
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph REG ["📝 User Registration"]
+        R1([New User\nClicks JOIN NOW]) --> R2[/Route: /register/]
+        R2 --> R3[Enter Full Name\nEmail + Password]
+        R3 --> R4[POST Firebase Auth\ncreateUserWithEmailAndPassword]
+        R4 --> R5[Generate 256-char\nSecureKey]
+        R5 --> R6[Save to Firestore\nprofiles/{uid}:\nsecure_key, full_name, email_id]
+        R6 --> R7[/Route: /dashboard/]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 2: DEVICE PAIRING (DASHBOARD)
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph PAIR ["🔗 Device Pairing (Dashboard)"]
+        P1[Dashboard → Generate\nPairing Code] --> P2[6-digit code\nshown on Dashboard]
+        P2 --> P3[Enter code on\nHome Station screen\nor scan QR]
+        P3 --> P4[Pairing validated\nvia usePairing hook]
+        P4 --> P5[WebRTC connection\nestablished]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 3: KIOSK DEVICE BOOT FLOW
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph KIOSK ["🖥️ Kiosk Device Boot Flow"]
+        K1([Device Boots\nConnects to Wi-Fi]) --> K2{Has PERMANENT_SECURE_KEY\nin /home/maainhome/.env?}
+        K2 -- No --> K3[Run kiosk-registration.sh]
+        K3 --> K4[Generate UUID v4\n+ Random 6-digit PIN]
+        K4 --> K5[Display PIN fullscreen\nin Chromium]
+        K5 --> K6[POST /api/register\nuuid + pin to CCC]
+        K6 --> K7{Registration OK?}
+        K7 -- error --> K8[Show error\nRetry in 30s]
+        K8 --> K6
+        K7 -- success --> K9[Poll /api/status?uuid=...\nevery 10s]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 4: CONTROL CENTER APPROVAL
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph CCC ["☁️ Control Center Approval"]
+        C1([Admin opens\nCCC Panel]) --> C2[GET /api/pending\nPoll every 10s]
         C2 --> C3{Any pending\nkiosks?}
         C3 -- None --> C2
-        C3 -- Has entries --> C4[Show table:\nUUID · PIN · Detected At]
+        C3 -- Has entries --> C4[Show table:\nUUID · PIN · Detected At\nRegistered User]
         C4 --> C5[Admin clicks\n✅ Approve]
         C5 --> C6[Prompt: Enter PIN\nshown on kiosk screen]
         C6 --> C7{PIN matches?}
@@ -43,41 +87,112 @@ flowchart TD
         C8 --> C6
         C7 -- Match --> C9[POST /api/approve\nuuid + pin]
         C9 --> C10[Generate SecureKey UUID]
-        C10 --> C11[Update Redis:\nstatus = approved\nsecure_key = ...KEY\nTTL = 7 days]
-        C11 --> C12[Remove UUID from\nkiosks:pending set]
+        C10 --> C11[Update Firestore:\nstatus=approved\nsecure_key=KEY\nexpiresAt=now+duration\nuserId=registeredUser\npinUsed=true]
+        C11 --> C12[Remove UUID from\npending list]
         C12 --> C13[✅ Show SecureKey\nto Admin]
-        C2 -.->|GET /api/health| C14[🔍 Health Check]
     end
 
-    %% ── REDIS / VERCEL KV ────────────────────────────
-    subgraph STORE ["🗄️ Storage (Upstash Redis via KV_URL)"]
-        R1[(kiosk:UUID\nJSON record\nTTL: 24h → 7d on approve)]
-        R2[(kiosks:pending\nRedis SET of UUIDs)]
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 5: DEVICE LAUNCH & PERSISTENT APPROVAL
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph LAUNCH ["🚀 Device Launch & Persistent Approval"]
+        K9 --> K10{Status from CCC?}
+        K10 -- approved --> K11[Save PERMANENT_SECURE_KEY,\nKIOSK_UUID, APPROVED_UNTIL\nto /home/maainhome/.env]
+        K11 --> K12[🟢 Launch Station\nhttps://www.maahome.in/home\nin Kiosk Mode]
+        K10 -- not_found --> K3
+        K12 --> K13[Device displays\nHomeStation page\nwith WebRTC ready]
+        K13 --> K14{Device Reboots?}
+        K14 -- Yes --> K15{Has PERMANENT_SECURE_KEY\nin .env?}
+        K15 -- No --> K3
+        K15 -- Yes --> K16{Approval Valid?\nLocal .env + CCC check}
+        K16 -- Valid --> K17[🟢 Direct Launch\n(NO re-approval needed)]
+        K16 -- Expired/Disabled --> K3
+        K14 -- No --> K13
     end
 
-    %% ── CONNECTIONS ──────────────────────────────────
-    K9 -->|Writes| R1
-    K9 -->|SAdd| R2
-    C2 -->|SMembers + Get| R2
-    C2 -->|Get each| R1
-    C9 -->|Set + SRem| R1
-    C9 -->|SRem| R2
-    K11 -->|Get kiosk:UUID| R1
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 6: REMOTE USER ACCESS
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph REMOTE ["📱 Remote User Access Flow"]
+        RM1([Remote User\nRegistered on Web]) --> RM2[User has secure_key\nin Firestore profiles]
+        RM2 --> RM3[User Logs in\nvia Landing page]
+        RM3 --> RM4[/Route: /dashboard/]
+        RM4 --> RM5[Dashboard shows\nuser profile + photos]
+        RM5 --> RM6[/Route: /hub/]
+        RM6 --> RM7[Select Remote View\nor save permanent key]
+        RM7 --> RM8[/Route: /remote/]
+        RM8 --> RM9[Enter SecureKey\nor auto-use stored key]
+        RM9 --> RM10[Validate against\nFirestore DB]
+        RM10 --> RM11{Valid?}
+        RM11 -- No --> RM12[Show error\n'Key invalid or expired']
+        RM12 --> RM8
+        RM11 -- Yes --> RM13[Connect via\nWebRTC Intercom]
+        RM13 --> RM14[🟢 Live Remote\nViewing Active]
+    end
 
-    %% ── STYLING ──────────────────────────────────────
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  PHASE 7: PIN SECURITY & PAYMENT CONTROL
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph SECURITY ["🔒 PIN Security & Payment Control"]
+        S1[Control Center DB\nValidates device\nwith PIN + userId\n+ password]
+        S2[Once PIN used →\nMark pinUsed=true\nPrevent reuse]
+        S3[If payment expired\n→ Disable device\n→ PIN blocked]
+        S4[Admin must\nre-request PIN\nfor re-activation]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  DATABASE
+    %% ═══════════════════════════════════════════════════════════════════
+    subgraph DB ["🗄️ Firestore Database"]
+        F1[(profiles collection:\nuid, secure_key,\nfull_name, email_id,\nphotos[], screensavers[]\n)]
+        F2[(devices collection:\nuuid, pin, status,\nsecure_key, expiresAt,\nuserId, pinUsed,\npaymentStatus\n])]
+        F3[(users collection:\nemail, passwordHash,\nrole, approvedDevices[]\n])]
+    end
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  CONNECTIONS
+    %% ═══════════════════════════════════════════════════════════════════
+    R4 -->|Auth| F3
+    R6 -->|Save profile| F1
+    W4 -->|Auth| F3
+    P4 -->|Pairing| F2
+    K6 -->|Writes device| F2
+    C2 -->|Query pending| F2
+    C9 -->|Update status+key| F2
+    C11 -->|Mark pinUsed=true| F2
+    RM9 -->|Validate key| F2
+    RM10 -->|Validate| F2
+    S1 -->|Validate pin+userId| F2
+    S3 -->|Disable on payment\nexpiry| F2
+
+    %% ═══════════════════════════════════════════════════════════════════
+    %%  STYLING
+    %% ═══════════════════════════════════════════════════════════════════
+    classDef webapp fill:#1a1a2e,stroke:#FFD700,color:#fff
+    classDef reg fill:#00695c,stroke:#4DB6AC,color:#fff
+    classDef pair fill:#4a148c,stroke:#CE93D8,color:#fff
     classDef kiosk fill:#1a1a2e,stroke:#FFD700,color:#fff
     classDef ccc fill:#0f3460,stroke:#00FF9D,color:#fff
-    classDef store fill:#16213e,stroke:#e94560,color:#fff
+    classDef launch fill:#004d40,stroke:#26A69A,color:#fff
+    classDef remote fill:#2d1b69,stroke:#9B59B6,color:#fff
+    classDef security fill:#4a148c,stroke:#CE93D8,color:#fff
+    classDef db fill:#16213e,stroke:#e94560,color:#fff
     classDef decision fill:#533483,stroke:#e2d9f3,color:#fff
     classDef ok fill:#065535,stroke:#00FF9D,color:#fff
     classDef err fill:#7b0d1e,stroke:#FF4B2B,color:#fff
 
-    class K1,K7,K8,K9,K11,K6 kiosk
-    class K5 ok
-    class K12 err
-    class C1,C2,C4,C5,C6,C9,C10,C11,C12,C13,C14 ccc
-    class K2,K4,K10,C3,C7 decision
-    class R1,R2 store
+    class W1,W2,W3,W4,W5,W6,W7,W8,W9,W10,W11,W12,W13,W14,W15,WEBAPP webapp
+    class R1,R2,R3,R4,R5,R6,R7,REG reg
+    class P1,P2,P3,P4,PAIR pair
+    class K1,K3,K4,K5,K6,K8,K9,KIOSK kiosk
+    class C1,C2,C4,C5,C6,C9,C10,C11,C12,C13,CCC ccc
+    class K11,K12,K13,K15,K16,K17,LAUNCH launch
+    class RM1,RM2,RM3,RM4,RM5,RM6,RM7,RM8,RM9,RM10,RM12,RM13,RM14,REMOTE remote
+    class S1,S2,S3,S4,SECURITY security
+    class F1,F2,F3,DB db
+    class W3,W5,K2,K7,K10,K14,K15,K16,C3,C7,R11,decision
+    class K12,K17,ok ok
+    class K8,err err
     </div>
     <script>
         mermaid.initialize({ startOnLoad: true, theme: 'default' });

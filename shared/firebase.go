@@ -25,6 +25,8 @@ type KioskRecord struct {
 	ApprovedVia string `json:"approvedVia,omitempty"`
 	DisabledAt string `json:"disabledAt,omitempty"`
 	DisabledReason string `json:"disabledReason,omitempty"`
+	HomeNumber string `json:"home_number,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 }
 
 // FirestoreDoc represents a Firestore document response
@@ -72,6 +74,12 @@ func ToFirestoreDoc(k KioskRecord) FirestoreDoc {
 	if k.DisabledReason != "" {
 		fields["disabledReason"] = FirestoreValue{StringValue: k.DisabledReason}
 	}
+	if k.HomeNumber != "" {
+		fields["home_number"] = FirestoreValue{StringValue: k.HomeNumber}
+	}
+	if k.UserID != "" {
+		fields["user_id"] = FirestoreValue{StringValue: k.UserID}
+	}
 	return FirestoreDoc{Fields: fields}
 }
 
@@ -101,6 +109,8 @@ func FromFirestoreDoc(doc FirestoreDoc) KioskRecord {
 		ApprovedVia:    getFieldString(doc.Fields, "approvedVia"),
 		DisabledAt:     getFieldString(doc.Fields, "disabledAt"),
 		DisabledReason: getFieldString(doc.Fields, "disabledReason"),
+		HomeNumber:     getFieldString(doc.Fields, "home_number"),
+		UserID:         getFieldString(doc.Fields, "user_id"),
 	}
 }
 
