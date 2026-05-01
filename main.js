@@ -151,20 +151,35 @@ function renderApprovedTable(approved) {
         return;
     }
 
-    approvedBody.innerHTML = approved.map(k => `
-        <tr>
-            <td style="font-family: monospace; font-weight: bold; color: var(--green);">${escapeHtml(k.home_number || 'N/A')}</td>
-            <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
-            <td style="font-size: 0.85rem;">${escapeHtml(k.user_id || 'Unclaimed')}</td>
-            <td><span class="status-badge approved">${escapeHtml(k.status)}</span></td>
-            <td>${formatTime(k.expiresAt)}</td>
-            <td>${escapeHtml(k.approvalMode || '-')}</td>
-            <td>
-                <button class="btn-icon" onclick="disableKiosk('${escapeHtml(k.uuid)}')">Disable</button>
-                <button class="btn-icon" style="color: var(--red); margin-left: 10px;" onclick="removeKiosk('${escapeHtml(k.uuid)}', 'approved')">Remove</button>
-            </td>
-        </tr>
-    `).join('');
+    approvedBody.innerHTML = approved.map(k => {
+        const hasUser = k.user_id && k.user_id.trim() !== '';
+        return `
+            <tr>
+                <td style="font-family: monospace; font-weight: bold; color: var(--green);">
+                    ${escapeHtml(k.home_number || 'N/A')}
+                    <button class="btn-tiny" title="Change Home Number" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'home_number', '${escapeHtml(k.home_number)}')">✎</button>
+                </td>
+                <td style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(k.uuid)}</td>
+                <td style="font-size: 0.85rem;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>${escapeHtml(k.user_id || 'Unclaimed')}</span>
+                        ${hasUser 
+                            ? `<button class="btn-tiny" style="color: var(--red);" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '')">unlink</button>
+                               <button class="btn-tiny" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '${escapeHtml(k.user_id)}')">edit</button>`
+                            : `<button class="btn-tiny" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '')">link</button>`
+                        }
+                    </div>
+                </td>
+                <td><span class="status-badge approved">${escapeHtml(k.status)}</span></td>
+                <td>${formatTime(k.expiresAt)}</td>
+                <td>${escapeHtml(k.approvalMode || '-')}</td>
+                <td>
+                    <button class="btn-icon" onclick="disableKiosk('${escapeHtml(k.uuid)}')">Disable</button>
+                    <button class="btn-icon" style="color: var(--red); margin-left: 10px;" onclick="removeKiosk('${escapeHtml(k.uuid)}', 'approved')">Remove</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function renderDisabledTable(disabled) {
@@ -254,6 +269,31 @@ async function removeKiosk(uuid, source) {
         }
     } catch (e) {
         alert('Error removing station: ' + e.message);
+    }
+}
+
+async function updateKioskField(uuid, field, currentValue) {
+    const fieldName = field === 'home_number' ? 'Home Number' : 'User ID';
+    const newValue = prompt(`Enter new ${fieldName} for station ${uuid}:`, currentValue || '');
+    
+    if (newValue === null) return; // Cancelled
+
+    try {
+        const payload = { uuid };
+        payload[field] = newValue.trim();
+
+        const result = await fetchJson('/api/update-kiosk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (result.success) {
+            alert(`✅ ${fieldName} updated successfully.`);
+            renderPendingTable(); // Refresh table
+        }
+    } catch (e) {
+        alert(`Error updating ${fieldName}: ` + e.message);
     }
 }
 

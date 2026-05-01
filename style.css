@@ -297,6 +297,24 @@ td {
     font-size: 0.8rem;
 }
 
+.btn-tiny {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: all 0.2s;
+}
+
+.btn-tiny:hover {
+    background: var(--primary);
+    color: var(--bg);
+    border-color: var(--primary);
+}
+
 .pin-display {
     font-size: 1.6rem;
     font-weight: 700;
