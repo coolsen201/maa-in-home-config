@@ -30,6 +30,10 @@
     { "src": "/api/remove",         "dest": "/api/remove/index.go"         },
     { "src": "/api/force-approve",  "dest": "/api/force-approve/index.go"  },
     { "src": "/api/update-kiosk",   "dest": "/api/update-kiosk/index.go"   },
+    { "src": "/api/transfer-device", "dest": "/api/transfer-device/index.go" },
+    { "src": "/api/users",           "dest": "/api/users/index.go"           },
+    { "src": "/api/expire-check",    "dest": "/api/expire-check/index.go"    },
+    { "src": "/api/reprovision",     "dest": "/api/reprovision/index.go"     },
     { "handle": "filesystem" },
     { "src": "/(.*)",         "dest": "/index.html"            }
   ]

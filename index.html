@@ -42,9 +42,11 @@
             </div>
             <nav>
                 <a href="#overview" class="active" data-view="overview">Kiosk Overview</a>
+                <a href="#devices" data-view="devices">📋 Devices</a>
                 <a href="#health" data-view="health">Health Check</a>
                 <a href="#keys" data-view="keys">Security Keys</a>
                 <a href="#analytics" data-view="analytics">Analytics</a>
+                <a href="#users" data-view="users">👥 Admin Users</a>
                 <a href="#settings" data-view="settings">System Settings</a>
             </nav>
             <div class="sidebar-footer">
@@ -149,6 +151,78 @@
                                 <td colspan="4" style="text-align:center; color:var(--text-dim);">No disabled devices
                                 </td>
                             </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </section>
+
+            <!-- ── Devices View ─────────────────────────────────────── -->
+
+            <section class="view-section" id="view-devices">
+                <header>
+                    <div class="header-info">
+                        <h2>Devices</h2>
+                        <p>All registered kiosks — full detail per device</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-primary" id="expire-check-btn" onclick="runExpireCheck()">⏱ Check Expirations</button>
+                    </div>
+                </header>
+
+                <!-- Release Safeguards info bar -->
+                <div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:10px;padding:10px 16px;font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:18px;">
+                    ⚡ <strong style="color:#f5c518;">Release Safeguards Active:</strong> UUID must match <code style="color:#f5c518;">XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</code> format &nbsp;·&nbsp; Remove requires checklist confirmation &nbsp;·&nbsp; Instant re-register on force-approve
+                </div>
+
+                <section class="kiosk-list">
+                    <table id="devices-table">
+                        <thead>
+                            <tr>
+                                <th>Home No.</th>
+                                <th>UUID</th>
+                                <th>Status</th>
+                                <th>User ID</th>
+                                <th>Expires At</th>
+                                <th>Approval Mode</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-body">
+                            <tr><td colspan="8" style="text-align:center;color:var(--text-dim);">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+            </section>
+
+            <!-- ── Admin Users View ────────────────────────────────── -->
+            <section class="view-section" id="view-users">
+                <header>
+                    <div class="header-info">
+                        <h2>Admin Users</h2>
+                        <p>Recharge, balance, and subscription tracking</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-primary" onclick="openAddUser()">＋ Add / Recharge User</button>
+                    </div>
+                </header>
+                <section class="kiosk-list">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Balance</th>
+                                <th>Credited</th>
+                                <th>Received From</th>
+                                <th>Expiry Date</th>
+                                <th>Updated At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-body">
+                            <tr><td colspan="9" style="text-align:center;color:var(--text-dim);">Loading...</td></tr>
                         </tbody>
                     </table>
                 </section>
@@ -312,7 +386,54 @@
         </div>
     </div>
 
+    <!-- Add / Recharge User Modal -->
+    <div id="add-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1001;align-items:center;justify-content:center;">
+        <div style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:36px;width:520px;max-width:90vw;box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+            <h2 style="margin:0 0 20px;font-size:1.2rem;color:#fff;">👤 Add / Recharge User</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">User ID *</label>
+                <input id="au-userid" type="text" placeholder="Firebase UID" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;font-family:monospace;"/></div>
+                <div><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">Name</label>
+                <input id="au-name" type="text" placeholder="Full Name" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;"/></div>
+                <div><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">Email</label>
+                <input id="au-email" type="email" placeholder="user@example.com" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;"/></div>
+                <div><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">Balance (₹)</label>
+                <input id="au-balance" type="text" placeholder="0.00" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;"/></div>
+                <div><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">Credited (₹)</label>
+                <input id="au-credited" type="text" placeholder="Amount credited" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;"/></div>
+                <div><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">Received From</label>
+                <input id="au-from" type="text" placeholder="UPI / Bank / Cash" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;"/></div>
+                <div style="grid-column:span 2;"><label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;display:block;margin-bottom:4px;">Expiry Date</label>
+                <input id="au-expiry" type="date" style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;color:#fff;font-size:0.85rem;outline:none;"/></div>
+            </div>
+            <div id="au-error" style="display:none;color:#ff6b6b;font-size:0.82rem;margin-bottom:12px;padding:8px 12px;background:rgba(255,107,107,0.1);border-radius:8px;"></div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button onclick="closeAddUser()" style="padding:10px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;">Cancel</button>
+                <button id="au-submit" onclick="submitAddUser()" style="padding:10px 24px;border-radius:8px;border:none;background:#f5c518;color:#000;font-weight:700;cursor:pointer;">💾 Save User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remove Checklist Safety Modal (#15) -->
+    <div id="remove-checklist-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1002;align-items:center;justify-content:center;">
+        <div style="background:#1a1a2e;border:1px solid rgba(255,100,100,0.3);border-radius:16px;padding:36px;width:440px;max-width:90vw;">
+            <h2 style="margin:0 0 8px;font-size:1.1rem;color:#ff6b6b;">⚠️ Confirm Device Removal</h2>
+            <p style="font-size:0.82rem;color:rgba(255,255,255,0.4);margin:0 0 20px;">Please confirm all checks before removing device:</p>
+            <p id="rm-uuid-label" style="font-family:monospace;font-size:0.78rem;color:#f5c518;margin:0 0 18px;word-break:break-all;"></p>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:rgba(255,255,255,0.7);"><input type="checkbox" id="rm-chk1" onchange="checkRemoveReady()"> Device has been physically collected or decommissioned</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:rgba(255,255,255,0.7);"><input type="checkbox" id="rm-chk2" onchange="checkRemoveReady()"> User has been notified of removal</label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:rgba(255,255,255,0.7);"><input type="checkbox" id="rm-chk3" onchange="checkRemoveReady()"> UUID is correct and not a typo</label>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button onclick="closeRemoveChecklist()" style="padding:10px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;">Cancel</button>
+                <button id="rm-confirm-btn" onclick="confirmRemove()" disabled style="padding:10px 24px;border-radius:8px;border:none;background:#ff4444;color:#fff;font-weight:700;cursor:pointer;opacity:0.4;">🗑 Remove Device</button>
+            </div>
+        </div>
+    </div>
+
     <script src="main.js"></script>
+
 </body>
 
 </html>

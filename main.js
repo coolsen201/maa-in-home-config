@@ -365,11 +365,256 @@ async function submitQuickApprove() {
 // ────────────────────────────────────────────────────────────────────────────
 
 
+// ── UUID Validation (#15) ────────────────────────────────────────────────────
+const UUID_REGEX = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
+
+function validateUUID(uuid) {
+    return UUID_REGEX.test(uuid);
+}
+
+// ── Devices View (#10) ───────────────────────────────────────────────────────
+async function renderDevicesView() {
+    const body = document.getElementById('devices-body');
+    try {
+        const [pending, approved, disabled] = await Promise.all([
+            fetchJson('/api/pending'),
+            fetchJson('/api/approved'),
+            fetchJson('/api/disabled'),
+        ]);
+        const all = [...(pending || []), ...(approved || []), ...(disabled || [])];
+        if (all.length === 0) {
+            body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--text-dim);">No devices found</td></tr>`;
+            return;
+        }
+        body.innerHTML = all.map(k => {
+            const statusColor = k.status === 'approved' ? 'var(--green)' : k.status === 'disabled' ? 'var(--red)' : 'var(--gold)';
+            const expired = k.expiresAt && new Date(k.expiresAt) < new Date();
+            return `<tr>
+                <td style="font-family:monospace;font-weight:bold;color:var(--gold);">${escapeHtml(k.home_number||'N/A')}</td>
+                <td style="font-family:monospace;font-size:0.78rem;">${escapeHtml(k.uuid)}</td>
+                <td><span class="status-badge ${k.status}">${escapeHtml(k.status)}</span>${expired ? ' <span style="color:#ff6b6b;font-size:0.7rem;">EXPIRED</span>' : ''}</td>
+                <td style="font-size:0.82rem;">${escapeHtml(k.user_id||'—')}</td>
+                <td style="font-size:0.82rem;${expired?'color:#ff6b6b;':''}">${formatTime(k.expiresAt)}</td>
+                <td style="font-size:0.8rem;">${escapeHtml(k.approvalMode||'—')}</td>
+                <td style="font-size:0.8rem;">${formatTime(k.lastSeen)}</td>
+                <td>
+                    <button class="btn-tiny" onclick="transferDevice('${escapeHtml(k.uuid)}','${escapeHtml(k.user_id||'')}')">Transfer</button>
+                    <button class="btn-tiny" onclick="reprovisionKiosk('${escapeHtml(k.uuid)}')" style="color:var(--gold);">WiFi Reset</button>
+                    <button class="btn-tiny" onclick="openRemoveChecklist('${escapeHtml(k.uuid)}')" style="color:var(--red);">Remove</button>
+                </td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);">Error: ${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+// ── Transfer Device (#11) ────────────────────────────────────────────────────
+async function transferDevice(uuid, currentUserId) {
+    const newUserId = prompt(`Transfer device ${uuid}\nCurrent user: ${currentUserId||'none'}\n\nEnter new User ID:`, '');
+    if (newUserId === null) return;
+    if (!newUserId.trim()) { alert('User ID cannot be empty.'); return; }
+    try {
+        const result = await fetchJson('/api/transfer-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid, new_user_id: newUserId.trim() })
+        });
+        if (result.success) {
+            alert(`✅ Device transferred!\nFrom: ${result.old_user_id||'none'}\nTo: ${result.new_user_id}`);
+            renderDevicesView();
+        } else {
+            alert('❌ Transfer failed: ' + (result.error || 'Unknown error'));
+        }
+    } catch(e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+// ── WiFi Reprovision (#14) ───────────────────────────────────────────────────
+async function reprovisionKiosk(uuid) {
+    if (!confirm(`Reset kiosk ${uuid} for WiFi re-provisioning?\n\nThis will set it back to "pending" — it will need re-approval on next boot.`)) return;
+    try {
+        const result = await fetchJson('/api/reprovision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid })
+        });
+        if (result.success) {
+            alert(`✅ Kiosk reset to pending.\n${result.message}`);
+            renderDevicesView();
+            renderPendingTable();
+        } else {
+            alert('❌ Reprovision failed: ' + (result.error || 'Unknown'));
+        }
+    } catch(e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+// ── Expiry Auto-Disable (#13) ────────────────────────────────────────────────
+async function runExpireCheck() {
+    const btn = document.getElementById('expire-check-btn');
+    if (btn) { btn.textContent = 'Checking…'; btn.disabled = true; }
+    try {
+        const result = await fetchJson('/api/expire-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const disabled = result.expired_disabled || [];
+        if (disabled.length > 0) {
+            alert(`⏱ Expiry check done.\n${disabled.length} device(s) auto-disabled:\n${disabled.join('\n')}`);
+        } else {
+            alert(`✅ Expiry check done. No expired devices found (${result.checked} checked).`);
+        }
+        renderDevicesView();
+        renderPendingTable();
+    } catch(e) {
+        alert('Error running expiry check: ' + e.message);
+    } finally {
+        if (btn) { btn.textContent = '⏱ Check Expirations'; btn.disabled = false; }
+    }
+}
+
+// ── Admin Users Panel (#12) ──────────────────────────────────────────────────
+async function renderUsersView() {
+    const body = document.getElementById('users-body');
+    try {
+        const users = await fetchJson('/api/users');
+        if (!users || users.length === 0) {
+            body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-dim);">No users found</td></tr>`;
+            return;
+        }
+        body.innerHTML = users.map(u => `<tr>
+            <td style="font-family:monospace;font-size:0.78rem;">${escapeHtml(u.user_id)}</td>
+            <td>${escapeHtml(u.name||'—')}</td>
+            <td style="font-size:0.82rem;">${escapeHtml(u.email||'—')}</td>
+            <td style="color:var(--green);font-weight:bold;">₹${escapeHtml(u.balance||'0')}</td>
+            <td>₹${escapeHtml(u.credited||'0')}</td>
+            <td style="font-size:0.82rem;">${escapeHtml(u.received_from||'—')}</td>
+            <td style="font-size:0.82rem;${u.expiry_date && new Date(u.expiry_date)<new Date()?'color:#ff6b6b;':''}">${escapeHtml(u.expiry_date||'—')}</td>
+            <td style="font-size:0.78rem;color:var(--text-dim);">${formatTime(u.updated_at)}</td>
+            <td><button class="btn-tiny" onclick="openEditUser(${JSON.stringify(u).split('"').join('&quot;')})">Edit</button></td>
+        </tr>`).join('');
+    } catch(e) {
+        body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--red);">Error: ${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
+function openAddUser() {
+    ['au-userid','au-name','au-email','au-balance','au-credited','au-from','au-expiry'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('au-error').style.display = 'none';
+    document.getElementById('add-user-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('au-userid').focus(), 100);
+}
+
+function openEditUser(u) {
+    document.getElementById('au-userid').value = u.user_id || '';
+    document.getElementById('au-name').value = u.name || '';
+    document.getElementById('au-email').value = u.email || '';
+    document.getElementById('au-balance').value = u.balance || '';
+    document.getElementById('au-credited').value = u.credited || '';
+    document.getElementById('au-from').value = u.received_from || '';
+    document.getElementById('au-expiry').value = u.expiry_date || '';
+    document.getElementById('au-error').style.display = 'none';
+    document.getElementById('add-user-modal').style.display = 'flex';
+}
+
+function closeAddUser() {
+    document.getElementById('add-user-modal').style.display = 'none';
+}
+
+async function submitAddUser() {
+    const userId = document.getElementById('au-userid').value.trim();
+    const errEl = document.getElementById('au-error');
+    const btn = document.getElementById('au-submit');
+    if (!userId) { errEl.textContent = 'User ID is required.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    btn.textContent = 'Saving…'; btn.disabled = true;
+    try {
+        const result = await fetchJson('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                name: document.getElementById('au-name').value.trim(),
+                email: document.getElementById('au-email').value.trim(),
+                balance: document.getElementById('au-balance').value.trim(),
+                credited: document.getElementById('au-credited').value.trim(),
+                received_from: document.getElementById('au-from').value.trim(),
+                expiry_date: document.getElementById('au-expiry').value,
+            })
+        });
+        if (result.success) {
+            closeAddUser();
+            renderUsersView();
+        } else {
+            errEl.textContent = result.error || 'Save failed.'; errEl.style.display = 'block';
+        }
+    } catch(e) {
+        errEl.textContent = e.message; errEl.style.display = 'block';
+    } finally {
+        btn.textContent = '💾 Save User'; btn.disabled = false;
+    }
+}
+
+// ── Remove Checklist Safeguard (#15) ─────────────────────────────────────────
+let _removeUUID = null;
+
+function openRemoveChecklist(uuid) {
+    if (!validateUUID(uuid)) {
+        alert(`❌ UUID format invalid: ${uuid}\nExpected: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`);
+        return;
+    }
+    _removeUUID = uuid;
+    document.getElementById('rm-uuid-label').textContent = 'UUID: ' + uuid;
+    ['rm-chk1','rm-chk2','rm-chk3'].forEach(id => { document.getElementById(id).checked = false; });
+    const btn = document.getElementById('rm-confirm-btn');
+    btn.disabled = true; btn.style.opacity = '0.4';
+    document.getElementById('remove-checklist-modal').style.display = 'flex';
+}
+
+function checkRemoveReady() {
+    const all = ['rm-chk1','rm-chk2','rm-chk3'].every(id => document.getElementById(id).checked);
+    const btn = document.getElementById('rm-confirm-btn');
+    btn.disabled = !all; btn.style.opacity = all ? '1' : '0.4';
+}
+
+function closeRemoveChecklist() {
+    document.getElementById('remove-checklist-modal').style.display = 'none';
+    _removeUUID = null;
+}
+
+async function confirmRemove() {
+    if (!_removeUUID) return;
+    const uuid = _removeUUID;
+    closeRemoveChecklist();
+    try {
+        const result = await fetchJson('/api/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid })
+        });
+        if (result.success) {
+            alert(`✅ Device ${uuid} removed.`);
+            renderDevicesView();
+            renderPendingTable();
+        } else {
+            alert('❌ Remove failed: ' + (result.error || 'Unknown'));
+        }
+    } catch(e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+// ── DOMContentLoaded ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('nav a[data-view]').forEach((link) => {
         link.addEventListener('click', (event) => {
             event.preventDefault();
-            setView(link.dataset.view);
+            const view = link.dataset.view;
+            setView(view);
+            if (view === 'devices') renderDevicesView();
+            if (view === 'users') renderUsersView();
         });
     });
 
@@ -378,9 +623,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('approval-duration').addEventListener('change', (event) => {
         saveApprovalDuration(event.target.value);
     });
-    // Quick approve modal is handled via inline onclick — no listener needed here
 
     setView('overview');
     renderPendingTable();
     setInterval(renderPendingTable, 10000);
+
+    // Auto expiry check on load (#13)
+    fetchJson('/api/expire-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .then(r => { if (r.expired_disabled?.length) console.log('[CCC] Auto-disabled expired:', r.expired_disabled); })
+        .catch(() => {});
 });
