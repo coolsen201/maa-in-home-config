@@ -340,9 +340,14 @@ async function submitQuickApprove() {
 
         if (result.success) {
             closeQuickApprove();
-            const msg = result.already_approved
-                ? `✅ Station was already approved!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}`
-                : `✅ Station approved for ${result.duration_days} day(s)!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`;
+            let msg;
+            if (result.already_approved) {
+                msg = `✅ Station was already approved!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}`;
+            } else if (result.reregistered) {
+                msg = `✅ Device re-registered and approved for ${result.duration_days} day(s)!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`;
+            } else {
+                msg = `✅ Station approved for ${result.duration_days} day(s)!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`;
+            }
             alert(msg);
             renderPendingTable();
         } else {

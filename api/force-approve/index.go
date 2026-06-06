@@ -45,9 +45,44 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to read kiosk: " + err.Error()})
 		return
 	}
+
+	durationDays := shared.NormalizeApprovalDays(payload.DurationDays)
+	secureKey := uuid.New().String()
+	now := time.Now().UTC().Format(time.RFC3339)
+	approvedAt := now
+	expiresAt := shared.CalculateExpiryFromNow(durationDays)
+
 	if !found {
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Device not found. Make sure the kiosk has completed first boot and is showing 'Station Pending Approval'."})
+		// Device not registered yet — create a fresh record and approve it (re-registration)
+		homeNumber := shared.GenerateHomeNumber()
+		newRecord := shared.KioskRecord{
+			UUID:         payload.UUID,
+			PIN:          "",
+			Status:       "approved",
+			SecureKey:    secureKey,
+			LastSeen:     now,
+			FirstSeen:    now,
+			ApprovedAt:   approvedAt,
+			ExpiresAt:    expiresAt,
+			ApprovalMode: shared.GetApprovalMode(),
+			ApprovedVia:  "ccc-force-reregister",
+			HomeNumber:   homeNumber,
+		}
+		if err := shared.SetKiosk(payload.UUID, newRecord); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]any{"success": false, "error": "Failed to register device: " + err.Error()})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]any{
+			"success":        true,
+			"reregistered":   true,
+			"home_number":    homeNumber,
+			"approved_at":    approvedAt,
+			"expires_at":     expiresAt,
+			"duration_days":  durationDays,
+			"approval_mode":  shared.GetApprovalMode(),
+		})
 		return
 	}
 
@@ -55,24 +90,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if record.Status == "approved" && record.SecureKey != "" && !shared.IsExpired(record.ExpiresAt) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
-			"success":       true,
+			"success":          true,
 			"already_approved": true,
-			"secure_key":    record.SecureKey,
-			"home_number":   record.HomeNumber,
-			"expires_at":    record.ExpiresAt,
-			"duration_days": shared.NormalizeApprovalDays(payload.DurationDays),
+			"secure_key":       record.SecureKey,
+			"home_number":      record.HomeNumber,
+			"expires_at":       record.ExpiresAt,
+			"duration_days":    shared.NormalizeApprovalDays(payload.DurationDays),
 		})
 		return
 	}
 
-	durationDays := shared.NormalizeApprovalDays(payload.DurationDays)
-	secureKey := uuid.New().String()
 	homeNumber := record.HomeNumber
 	if homeNumber == "" {
 		homeNumber = shared.GenerateHomeNumber()
 	}
-	approvedAt := time.Now().UTC().Format(time.RFC3339)
-	expiresAt := shared.CalculateExpiryFromNow(durationDays)
 
 	err = shared.UpdateKioskFields(payload.UUID, map[string]string{
 		"status":       "approved",
