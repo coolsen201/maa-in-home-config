@@ -249,16 +249,11 @@
     <div id="quick-approve-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; display:none; align-items:center; justify-content:center;">
         <div style="background:#1a1a2e; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:36px; width:480px; max-width:90vw; box-shadow:0 24px 64px rgba(0,0,0,0.6);">
             <h2 style="margin:0 0 8px; font-size:1.3rem; color:#fff;">⚡ Quick Approve Station</h2>
-            <p style="margin:0 0 24px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Enter the Device ID and PIN exactly as shown on the kiosk screen.</p>
+            <p style="margin:0 0 24px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Paste the Device ID shown on the kiosk screen and click Approve.</p>
 
-            <label style="display:block; margin-bottom:6px; font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em;">Device ID (UUID)</label>
+            <label style="display:block; margin-bottom:6px; font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em;">Device ID (from kiosk screen)</label>
             <input id="qa-uuid" type="text" placeholder="e.g. 0509E9FF-3ACF-4B73-AE39-D8CAE01B8A17"
-                style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 14px; color:#fff; font-family:monospace; font-size:0.85rem; margin-bottom:16px; outline:none;"
-            />
-
-            <label style="display:block; margin-bottom:6px; font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em;">PIN (from kiosk screen)</label>
-            <input id="qa-pin" type="text" placeholder="e.g. 482913"
-                style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 14px; color:#fff; font-family:monospace; font-size:1.1rem; letter-spacing:0.2em; margin-bottom:24px; outline:none;"
+                style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:12px 14px; color:#fff; font-family:monospace; font-size:0.85rem; margin-bottom:24px; outline:none;"
             />
 
             <div id="qa-error" style="display:none; color:#ff6b6b; font-size:0.85rem; margin-bottom:16px; padding:10px 14px; background:rgba(255,107,107,0.1); border-radius:8px;"></div>

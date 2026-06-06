@@ -27,7 +27,9 @@
     { "src": "/api/approved", "dest": "/api/approved/index.go" },
     { "src": "/api/disabled", "dest": "/api/disabled/index.go" },
     { "src": "/api/disable",  "dest": "/api/disable/index.go"  },
-    { "src": "/api/remove",   "dest": "/api/remove/index.go"   },
+    { "src": "/api/remove",         "dest": "/api/remove/index.go"         },
+    { "src": "/api/force-approve",  "dest": "/api/force-approve/index.go"  },
+    { "src": "/api/update-kiosk",   "dest": "/api/update-kiosk/index.go"   },
     { "handle": "filesystem" },
     { "src": "/(.*)",         "dest": "/index.html"            }
   ]

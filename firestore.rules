@@ -3,39 +3,119 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Allow kiosk registration and status checks
-    match /kiosks/{id} {
-      allow read, write: if true; 
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Allow kiosks to handle calls and candidates
+    match /{path=**}/inventory/{itemId} {
+      allow read: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    match /shops/{shopId} {
+      allow read: if true;
+      allow write: if isOwner(shopId) || isAdmin();
+      match /inventory/{itemId} {
+        allow read: if true;
+        allow write: if isOwner(shopId) || isAdmin();
+      }
+      match /wallet_transactions/{txId} {
+        allow read: if isOwner(shopId) || isAdmin();
+        allow create: if isOwner(shopId) || isAdmin();
+      }
+    }
+
+    match /categories/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /global_products/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /subscription_plans/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /banners/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /profiles/{profileId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /pairing_tokens/{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /call_logs/{document=**} {
+      allow create: if true;
+      allow read: if isAuthenticated();
+    }
+
+    match /system_logs/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    match /profit_analysis/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    match /expenses/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /seller_subscriptions/{subId} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated() || isAdmin();
+    }
+    match /shop_visits/{document=**} {
+      allow read: if isAdmin();
+      allow write: if true; 
+    }
+    match /ai_usage_logs/{document=**} {
+      allow read: if isAdmin();
+      allow write: if isAuthenticated();
+    }
+
     match /calls/{callId} {
       allow read, write: if true;
-      match /{allSubcollections=**} {
+      match /{subcollection}/{document=**} {
         allow read, write: if true;
       }
     }
 
-    // Allow call logging
-    match /call_logs/{logId} {
+    match /products/{document=**} {
       allow read, write: if true;
     }
 
-    // User profiles — kiosk reads by secure_key (no auth), only owner can write
-    match /profiles/{userId} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    match /kiosks/{document=**} {
+      allow read, write: if true;
     }
-
-    // Pairing tokens used for QR/6-digit code pairing
-    match /pairing_tokens/{code} {
+    match /global_catalog/{document=**} {
       allow read, write: if true;
     }
 
-    // User devices — track which user owns which device
-    match /user_devices/{docId} {
-      allow read, write: if true;
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
-

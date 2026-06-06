@@ -316,14 +316,13 @@ function closeQuickApprove() {
 
 async function submitQuickApprove() {
     const uuid = document.getElementById('qa-uuid').value.trim().toUpperCase();
-    const pin  = document.getElementById('qa-pin').value.trim();
     const errEl = document.getElementById('qa-error');
     const btn   = document.getElementById('qa-submit');
 
     errEl.style.display = 'none';
 
-    if (!uuid || !pin) {
-        errEl.textContent = 'Both Device ID and PIN are required.';
+    if (!uuid) {
+        errEl.textContent = 'Device ID is required.';
         errEl.style.display = 'block';
         return;
     }
@@ -333,15 +332,18 @@ async function submitQuickApprove() {
 
     try {
         const durationDays = getSelectedApprovalDays();
-        const result = await fetchJson('/api/approve', {
+        const result = await fetchJson('/api/force-approve', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uuid, pin, duration_days: durationDays })
+            body: JSON.stringify({ uuid, duration_days: durationDays })
         });
 
         if (result.success) {
             closeQuickApprove();
-            alert(`✅ Station approved for ${result.duration_days} day(s)!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`);
+            const msg = result.already_approved
+                ? `✅ Station was already approved!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}`
+                : `✅ Station approved for ${result.duration_days} day(s)!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`;
+            alert(msg);
             renderPendingTable();
         } else {
             errEl.textContent = '❌ ' + (result.error || 'Approval failed');

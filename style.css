@@ -2,7 +2,8 @@
     --bg: #0a0a0c;
     --sidebar: #121216;
     --card: #18181e;
-    --primary: #FFD700; /* Gold */
+    --primary: #FFD700;
+    /* Gold */
     --accent: #FFC000;
     --text: #ffffff;
     --text-dim: #a0a0a0;
@@ -82,7 +83,8 @@ nav a {
     transition: all 0.3s ease;
 }
 
-nav a:hover, nav a.active {
+nav a:hover,
+nav a.active {
     background: var(--glass);
     color: var(--primary);
 }
@@ -232,9 +234,17 @@ header p {
     font-weight: 600;
 }
 
-.text-green { color: var(--green); }
-.text-gold { color: var(--primary); }
-.text-red { color: var(--red); }
+.text-green {
+    color: var(--green);
+}
+
+.text-gold {
+    color: var(--primary);
+}
+
+.text-red {
+    color: var(--red);
+}
 
 /* Table */
 .kiosk-list {
@@ -273,11 +283,30 @@ td {
     background: var(--glass);
 }
 
-.status-badge.online { color: var(--green); border: 1px solid var(--green); }
-.status-badge.offline { color: var(--red); border: 1px solid var(--red); }
-.status-badge.pending { color: var(--primary); border: 1px solid var(--primary); }
-.status-badge.approved { color: var(--green); border: 1px solid var(--green); }
-.status-badge.disabled { color: var(--red); border: 1px solid var(--red); }
+.status-badge.online {
+    color: var(--green);
+    border: 1px solid var(--green);
+}
+
+.status-badge.offline {
+    color: var(--red);
+    border: 1px solid var(--red);
+}
+
+.status-badge.pending {
+    color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+.status-badge.approved {
+    color: var(--green);
+    border: 1px solid var(--green);
+}
+
+.status-badge.disabled {
+    color: var(--red);
+    border: 1px solid var(--red);
+}
 
 .btn-icon {
     background: transparent;
@@ -346,6 +375,7 @@ td {
 }
 
 @media (max-width: 900px) {
+
     .stats-grid,
     .detail-grid {
         grid-template-columns: 1fr;
