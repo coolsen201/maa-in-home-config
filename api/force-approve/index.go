@@ -1,4 +1,4 @@
-package forceapprove
+package force_approve
 
 import (
 	"encoding/json"
