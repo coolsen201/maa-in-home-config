@@ -101,7 +101,7 @@ function updateKeysView(approved) {
 
 async function renderPendingTable() {
     const pendingBody = document.getElementById('pending-body');
-    
+
     try {
         const [pending, approved, disabled, health] = await Promise.all([
             fetchJson('/api/pending'),
@@ -163,11 +163,11 @@ function renderApprovedTable(approved) {
                 <td style="font-size: 0.85rem;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span>${escapeHtml(k.user_id || 'Unclaimed')}</span>
-                        ${hasUser 
-                            ? `<button class="btn-tiny" style="color: var(--red);" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '')">unlink</button>
+                        ${hasUser
+                ? `<button class="btn-tiny" style="color: var(--red);" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '')">unlink</button>
                                <button class="btn-tiny" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '${escapeHtml(k.user_id)}')">edit</button>`
-                            : `<button class="btn-tiny" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '')">link</button>`
-                        }
+                : `<button class="btn-tiny" onclick="updateKioskField('${escapeHtml(k.uuid)}', 'user_id', '')">link</button>`
+            }
                     </div>
                 </td>
                 <td><span class="status-badge approved">${escapeHtml(k.status)}</span></td>
@@ -275,7 +275,7 @@ async function removeKiosk(uuid, source) {
 async function updateKioskField(uuid, field, currentValue) {
     const fieldName = field === 'home_number' ? 'Home Number' : 'User ID';
     const newValue = prompt(`Enter new ${fieldName} for station ${uuid}:`, currentValue || '');
-    
+
     if (newValue === null) return; // Cancelled
 
     try {
@@ -300,6 +300,64 @@ async function updateKioskField(uuid, field, currentValue) {
 
 // renderTable() removed as it depended on broken Cloudflare Tunnels API
 
+// ── Quick Approve Modal ──────────────────────────────────────────────────────
+function openQuickApprove() {
+    const modal = document.getElementById('quick-approve-modal');
+    modal.style.display = 'flex';
+    document.getElementById('qa-uuid').value = '';
+    document.getElementById('qa-pin').value = '';
+    document.getElementById('qa-error').style.display = 'none';
+    setTimeout(() => document.getElementById('qa-uuid').focus(), 100);
+}
+
+function closeQuickApprove() {
+    document.getElementById('quick-approve-modal').style.display = 'none';
+}
+
+async function submitQuickApprove() {
+    const uuid = document.getElementById('qa-uuid').value.trim().toUpperCase();
+    const pin  = document.getElementById('qa-pin').value.trim();
+    const errEl = document.getElementById('qa-error');
+    const btn   = document.getElementById('qa-submit');
+
+    errEl.style.display = 'none';
+
+    if (!uuid || !pin) {
+        errEl.textContent = 'Both Device ID and PIN are required.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    btn.textContent = 'Approving…';
+    btn.disabled = true;
+
+    try {
+        const durationDays = getSelectedApprovalDays();
+        const result = await fetchJson('/api/approve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid, pin, duration_days: durationDays })
+        });
+
+        if (result.success) {
+            closeQuickApprove();
+            alert(`✅ Station approved for ${result.duration_days} day(s)!\nHome No: ${result.home_number}\nExpires: ${result.expires_at}\n\nThe kiosk will now automatically launch the MaainHome app.`);
+            renderPendingTable();
+        } else {
+            errEl.textContent = '❌ ' + (result.error || 'Approval failed');
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = '❌ ' + e.message;
+        errEl.style.display = 'block';
+    } finally {
+        btn.textContent = '✅ Approve Now';
+        btn.disabled = false;
+    }
+}
+// ────────────────────────────────────────────────────────────────────────────
+
+
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('nav a[data-view]').forEach((link) => {
         link.addEventListener('click', (event) => {
@@ -313,10 +371,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('approval-duration').addEventListener('change', (event) => {
         saveApprovalDuration(event.target.value);
     });
-    document.getElementById('add-kiosk').addEventListener('click', () => {
-        alert('Stations appear here automatically after first boot and Wi-Fi connection.');
-    });
-    
+    // Quick approve modal is handled via inline onclick — no listener needed here
+
     setView('overview');
     renderPendingTable();
     setInterval(renderPendingTable, 10000);

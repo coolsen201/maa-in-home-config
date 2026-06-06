@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="ccc-container">
         <!-- Sidebar -->
@@ -37,7 +39,7 @@
                         <p>Monitoring <span id="active-count">0</span> Active Stations</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-primary" id="add-kiosk">Stations Auto-Register</button>
+                        <button class="btn-primary" id="quick-approve-btn" onclick="openQuickApprove()">⚡ Quick Approve</button>
                         <div class="user-profile">Admin</div>
                     </div>
                 </header>
@@ -63,14 +65,19 @@
                     </header>
                     <table id="pending-table">
                         <thead>
-                            <tr>                               <th>Home No.</th>                                <th>UUID</th>
+                            <tr>
+                                <th>Home No.</th>
+                                <th>UUID</th>
                                 <th>PIN (from Kiosk Screen)</th>
                                 <th>Detected At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="pending-body">
-                            <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests</td></tr>
+                            <tr>
+                                <td colspan="4" style="text-align:center; color:var(--text-dim);">No pending requests
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </section>
@@ -92,7 +99,10 @@
                             </tr>
                         </thead>
                         <tbody id="approved-body">
-                            <tr><td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices</td></tr>
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:var(--text-dim);">No approved devices
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </section>
@@ -112,7 +122,10 @@
                             </tr>
                         </thead>
                         <tbody id="disabled-body">
-                            <tr><td colspan="4" style="text-align:center; color:var(--text-dim);">No disabled devices</td></tr>
+                            <tr>
+                                <td colspan="4" style="text-align:center; color:var(--text-dim);">No disabled devices
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </section>
@@ -165,7 +178,9 @@
                             </tr>
                         </thead>
                         <tbody id="keys-body">
-                            <tr><td colspan="3" style="text-align:center; color:var(--text-dim);">No approved keys</td></tr>
+                            <tr>
+                                <td colspan="3" style="text-align:center; color:var(--text-dim);">No approved keys</td>
+                            </tr>
                         </tbody>
                     </table>
                 </section>
@@ -222,12 +237,40 @@
                     </div>
                     <div class="detail-card detail-card-wide">
                         <h3>Onboarding</h3>
-                        <p class="detail-copy">Stations self-register on first boot after Wi-Fi connection and wait here for manual approval.</p>
+                        <p class="detail-copy">Stations self-register on first boot after Wi-Fi connection and wait here
+                            for manual approval.</p>
                     </div>
                 </section>
             </section>
         </main>
     </div>
+
+    <!-- Quick Approve Modal -->
+    <div id="quick-approve-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000; display:none; align-items:center; justify-content:center;">
+        <div style="background:#1a1a2e; border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:36px; width:480px; max-width:90vw; box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+            <h2 style="margin:0 0 8px; font-size:1.3rem; color:#fff;">⚡ Quick Approve Station</h2>
+            <p style="margin:0 0 24px; color:rgba(255,255,255,0.4); font-size:0.85rem;">Enter the Device ID and PIN exactly as shown on the kiosk screen.</p>
+
+            <label style="display:block; margin-bottom:6px; font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em;">Device ID (UUID)</label>
+            <input id="qa-uuid" type="text" placeholder="e.g. 0509E9FF-3ACF-4B73-AE39-D8CAE01B8A17"
+                style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 14px; color:#fff; font-family:monospace; font-size:0.85rem; margin-bottom:16px; outline:none;"
+            />
+
+            <label style="display:block; margin-bottom:6px; font-size:0.75rem; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.08em;">PIN (from kiosk screen)</label>
+            <input id="qa-pin" type="text" placeholder="e.g. 482913"
+                style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 14px; color:#fff; font-family:monospace; font-size:1.1rem; letter-spacing:0.2em; margin-bottom:24px; outline:none;"
+            />
+
+            <div id="qa-error" style="display:none; color:#ff6b6b; font-size:0.85rem; margin-bottom:16px; padding:10px 14px; background:rgba(255,107,107,0.1); border-radius:8px;"></div>
+
+            <div style="display:flex; gap:12px; justify-content:flex-end;">
+                <button onclick="closeQuickApprove()" style="padding:10px 20px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:transparent; color:rgba(255,255,255,0.5); cursor:pointer; font-size:0.9rem;">Cancel</button>
+                <button id="qa-submit" onclick="submitQuickApprove()" style="padding:10px 24px; border-radius:8px; border:none; background:#f5c518; color:#000; font-weight:700; cursor:pointer; font-size:0.9rem;">✅ Approve Now</button>
+            </div>
+        </div>
+    </div>
+
     <script src="main.js"></script>
 </body>
+
 </html>
