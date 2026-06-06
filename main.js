@@ -715,10 +715,10 @@ function updateBulkToolbar() {
     const toolbar = document.getElementById('bulk-toolbar');
     const count = document.getElementById('bulk-count');
     if (selected.length > 0) {
-        toolbar.style.display = 'flex';
+        toolbar.classList.add('visible');
         count.textContent = `${selected.length} selected`;
     } else {
-        toolbar.style.display = 'none';
+        toolbar.classList.remove('visible');
     }
 }
 

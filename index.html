@@ -11,25 +11,25 @@
 
 <body>
     <!-- PIN Lock Gate -->
-    <div id="pin-gate" style="position:fixed;inset:0;background:#0a0a0c;display:flex;align-items:center;justify-content:center;z-index:9999;">
-        <div style="width:360px;background:#121216;border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:40px;display:flex;flex-direction:column;gap:24px;">
-            <div style="display:flex;align-items:center;gap:14px;">
-                <div style="width:44px;height:44px;background:#f5c518;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">&#128737;</div>
+    <div id="pin-gate" style="position:fixed;inset:0;background:#0D0D0D;display:flex;align-items:center;justify-content:center;z-index:9999;">
+        <div style="width:340px;background:#141414;border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:32px;display:flex;flex-direction:column;gap:20px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:32px;height:32px;background:#F5C518;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#0D0D0D;">M</div>
                 <div>
-                    <h2 style="margin:0;font-size:1rem;color:#fff;font-family:Outfit,sans-serif;">MaainHome CCC</h2>
-                    <p style="margin:0;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;color:#f5c518;opacity:0.7;">Admin Access Required</p>
+                    <h2 style="margin:0;font-size:0.95rem;font-weight:700;color:#fff;font-family:Outfit,sans-serif;">MaainHome CCC</h2>
+                    <p style="margin:0;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,197,24,0.7);">Admin Access</p>
                 </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-                <label style="font-size:0.7rem;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;">PIN</label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <label style="font-size:0.68rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;">PIN</label>
                 <input id="ccc-pin-input" type="password" placeholder="Enter PIN" autofocus
-                    style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;color:#fff;font-size:0.95rem;outline:none;width:100%;box-sizing:border-box;"
+                    style="background:#1C1C1C;border:1px solid rgba(255,255,255,0.10);border-radius:6px;padding:10px 14px;color:#fff;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;font-family:Outfit,sans-serif;"
                     onkeydown="if(event.key==='Enter')cccCheckPin()"
                 />
-                <p id="ccc-pin-error" style="display:none;color:#ff6b6b;font-size:0.8rem;">Incorrect PIN. Try again.</p>
+                <p id="ccc-pin-error" style="display:none;color:rgba(255,255,255,0.5);font-size:0.76rem;">Incorrect PIN. Try again.</p>
             </div>
-            <button onclick="cccCheckPin()" style="background:#f5c518;color:#000;font-weight:700;border:none;border-radius:10px;padding:12px;font-size:0.95rem;cursor:pointer;">Unlock Dashboard</button>
-            <p style="text-align:center;font-size:0.65rem;color:rgba(255,255,255,0.15);text-transform:uppercase;letter-spacing:0.1em;">MaainHome v2.2.0 · Cloud-Sync</p>
+            <button onclick="cccCheckPin()" style="background:#F5C518;color:#0D0D0D;font-weight:700;border:none;border-radius:6px;padding:10px;font-size:0.88rem;cursor:pointer;font-family:Outfit,sans-serif;">Unlock Dashboard</button>
+            <p style="text-align:center;font-size:0.62rem;color:rgba(255,255,255,0.15);text-transform:uppercase;letter-spacing:0.08em;">MaainHome v2.2.0</p>
         </div>
     </div>
 
@@ -62,13 +62,14 @@
                 <header>
                     <div class="header-info">
                         <h2>Kiosk Overview</h2>
-                        <p>Monitoring <span id="active-count">0</span> Active Stations</p>
+                        <p>Monitoring <span id="active-count">0</span> active stations</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-primary" id="quick-approve-btn" onclick="openQuickApprove()">⚡ Quick Approve</button>
+                        <button class="btn-primary" id="quick-approve-btn" onclick="openQuickApprove()">Quick Approve</button>
                         <div class="user-profile">Admin</div>
                     </div>
                 </header>
+                <div class="page-body">
 
                 <section class="stats-grid">
                     <div class="stat-card">
@@ -155,6 +156,7 @@
                         </tbody>
                     </table>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
             <!-- ── Devices View ─────────────────────────────────────── -->
@@ -166,21 +168,22 @@
                         <p>All registered kiosks — full detail per device</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-primary" id="expire-check-btn" onclick="runExpireCheck()">⏱ Check Expirations</button>
+                        <button class="btn-primary" id="expire-check-btn" onclick="runExpireCheck()">Check Expirations</button>
                     </div>
                 </header>
+                <div class="page-body">
 
                 <!-- Release Safeguards info bar -->
-                <div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:10px;padding:10px 16px;font-size:0.78rem;color:rgba(255,255,255,0.5);margin-bottom:18px;">
-                    ⚡ <strong style="color:#f5c518;">Release Safeguards Active:</strong> UUID must match <code style="color:#f5c518;">XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</code> format &nbsp;·&nbsp; Remove requires checklist confirmation &nbsp;·&nbsp; Instant re-register on force-approve
+                <div class="info-bar">
+                    <strong>Release Safeguards Active:</strong> UUID must match <code>XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX</code> &nbsp;·&nbsp; Remove requires checklist confirmation
                 </div>
 
-                <!-- Bulk Actions Toolbar (#10) -->
-                <div id="bulk-toolbar" style="display:none;align-items:center;gap:12px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:10px;padding:10px 16px;margin-bottom:12px;">
-                    <span id="bulk-count" style="font-size:0.85rem;color:#f5c518;font-weight:bold;">0 selected</span>
-                    <button class="btn-primary" style="padding:6px 14px;font-size:0.82rem;" onclick="bulkExtend()">⏳ Extend Expiry</button>
-                    <button class="btn-primary" style="padding:6px 14px;font-size:0.82rem;background:rgba(255,100,100,0.15);color:#ff6b6b;border:1px solid rgba(255,100,100,0.3);" onclick="bulkDisable()">🚫 Disable All</button>
-                    <button style="padding:6px 12px;font-size:0.82rem;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.4);cursor:pointer;" onclick="clearBulkSelection()">✕ Clear</button>
+                <!-- Bulk Actions Toolbar -->
+                <div id="bulk-toolbar" class="bulk-toolbar">
+                    <span id="bulk-count">0 selected</span>
+                    <button class="btn-primary btn-sm" onclick="bulkExtend()">Extend Expiry</button>
+                    <button class="btn-primary btn-sm" style="background:var(--surface-2);color:var(--text-dim);border:1px solid var(--border);" onclick="bulkDisable()">Disable All</button>
+                    <button class="btn-icon" onclick="clearBulkSelection()">✕ Clear</button>
                 </div>
                 <section class="kiosk-list">
                     <table id="devices-table">
@@ -202,6 +205,7 @@
                         </tbody>
                     </table>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
 
@@ -213,9 +217,10 @@
                         <p>Recharge, balance, and subscription tracking</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-primary" onclick="openAddUser()">＋ Add / Recharge User</button>
+                        <button class="btn-primary" onclick="openAddUser()">+ Add / Recharge User</button>
                     </div>
                 </header>
+                <div class="page-body">
                 <section class="kiosk-list">
                     <table id="users-table">
                         <thead>
@@ -236,6 +241,7 @@
                         </tbody>
                     </table>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
             <!-- ── Audit Log View (#7) ──────────────────────────────────── -->
@@ -246,9 +252,10 @@
                         <p>Admin action history — approve, disable, transfer, extend</p>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-primary" onclick="renderAuditLog()">↻ Refresh</button>
+                        <button class="btn-primary" onclick="renderAuditLog()">Refresh</button>
                     </div>
                 </header>
+                <div class="page-body">
                 <section class="kiosk-list">
                     <table id="audit-table">
                         <thead>
@@ -267,6 +274,7 @@
                         </tbody>
                     </table>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
             <section class="view-section" id="view-health">
@@ -277,6 +285,7 @@
                         <p>Live backend connectivity and approval mode</p>
                     </div>
                 </header>
+                <div class="page-body">
                 <section class="detail-grid">
                     <div class="detail-card">
                         <h3>API Status</h3>
@@ -295,6 +304,7 @@
                         <p class="detail-value" id="health-approval-mode">-</p>
                     </div>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
             <section class="view-section" id="view-keys">
@@ -304,6 +314,7 @@
                         <p>Approved device keys for support and diagnostics</p>
                     </div>
                 </header>
+                <div class="page-body">
                 <section class="kiosk-list">
                     <header class="section-header">
                         <h3>Approved Keys</h3>
@@ -323,6 +334,7 @@
                         </tbody>
                     </table>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
             <section class="view-section" id="view-analytics">
@@ -332,6 +344,7 @@
                         <p>Simple deployment-level station metrics</p>
                     </div>
                 </header>
+                <div class="page-body">
                 <section class="detail-grid">
                     <div class="detail-card">
                         <h3>Total Stations</h3>
@@ -350,6 +363,7 @@
                         <p class="detail-value text-red" id="analytics-disabled">-</p>
                     </div>
                 </section>
+                </div><!-- /page-body -->
             </section>
 
             <section class="view-section" id="view-settings">
@@ -359,6 +373,7 @@
                         <p>Current backend-controlled onboarding behavior</p>
                     </div>
                 </header>
+                <div class="page-body">
                 <section class="detail-grid">
                     <div class="detail-card">
                         <h3>Approval Workflow</h3>
@@ -380,6 +395,7 @@
                             for manual approval.</p>
                     </div>
                 </section>
+                </div><!-- /page-body -->
             </section>
         </main>
     </div><!-- end ccc-main -->
