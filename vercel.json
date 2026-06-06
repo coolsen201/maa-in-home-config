@@ -34,6 +34,8 @@
     { "src": "/api/users",           "dest": "/api/users/index.go"           },
     { "src": "/api/expire-check",    "dest": "/api/expire-check/index.go"    },
     { "src": "/api/reprovision",     "dest": "/api/reprovision/index.go"     },
+    { "src": "/api/audit-log",       "dest": "/api/audit-log/index.go"       },
+    { "src": "/api/extend-device",   "dest": "/api/extend-device/index.go"   },
     { "handle": "filesystem" },
     { "src": "/(.*)",         "dest": "/index.html"            }
   ]

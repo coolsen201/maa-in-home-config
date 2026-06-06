@@ -387,17 +387,18 @@ async function renderDevicesView() {
             return;
         }
         body.innerHTML = all.map(k => {
-            const statusColor = k.status === 'approved' ? 'var(--green)' : k.status === 'disabled' ? 'var(--red)' : 'var(--gold)';
             const expired = k.expiresAt && new Date(k.expiresAt) < new Date();
             return `<tr>
+                <td><input type="checkbox" class="bulk-chk" value="${escapeHtml(k.uuid)}" onchange="updateBulkToolbar()"></td>
                 <td style="font-family:monospace;font-weight:bold;color:var(--gold);">${escapeHtml(k.home_number||'N/A')}</td>
-                <td style="font-family:monospace;font-size:0.78rem;">${escapeHtml(k.uuid)}</td>
+                <td style="font-family:monospace;font-size:0.78rem;cursor:pointer;color:#88aaff;text-decoration:underline;" onclick='showDeviceDetail(${JSON.stringify(k)})'>${escapeHtml(k.uuid)}</td>
                 <td><span class="status-badge ${k.status}">${escapeHtml(k.status)}</span>${expired ? ' <span style="color:#ff6b6b;font-size:0.7rem;">EXPIRED</span>' : ''}</td>
                 <td style="font-size:0.82rem;">${escapeHtml(k.user_id||'—')}</td>
                 <td style="font-size:0.82rem;${expired?'color:#ff6b6b;':''}">${formatTime(k.expiresAt)}</td>
                 <td style="font-size:0.8rem;">${escapeHtml(k.approvalMode||'—')}</td>
                 <td style="font-size:0.8rem;">${formatTime(k.lastSeen)}</td>
                 <td>
+                    <button class="btn-tiny" onclick="openExtendModal('${escapeHtml(k.uuid)}')">+Days</button>
                     <button class="btn-tiny" onclick="transferDevice('${escapeHtml(k.uuid)}','${escapeHtml(k.user_id||'')}')">Transfer</button>
                     <button class="btn-tiny" onclick="reprovisionKiosk('${escapeHtml(k.uuid)}')" style="color:var(--gold);">WiFi Reset</button>
                     <button class="btn-tiny" onclick="openRemoveChecklist('${escapeHtml(k.uuid)}')" style="color:var(--red);">Remove</button>
@@ -405,9 +406,10 @@ async function renderDevicesView() {
             </tr>`;
         }).join('');
     } catch(e) {
-        body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--red);">Error: ${escapeHtml(e.message)}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--red);">Error: ${escapeHtml(e.message)}</td></tr>`;
     }
 }
+
 
 // ── Transfer Device (#11) ────────────────────────────────────────────────────
 async function transferDevice(uuid, currentUserId) {
@@ -615,6 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setView(view);
             if (view === 'devices') renderDevicesView();
             if (view === 'users') renderUsersView();
+            if (view === 'auditlog') renderAuditLog();
         });
     });
 
@@ -633,3 +636,163 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(r => { if (r.expired_disabled?.length) console.log('[CCC] Auto-disabled expired:', r.expired_disabled); })
         .catch(() => {});
 });
+
+// ── Extend Expiry (#9) ───────────────────────────────────────────────────────
+let _extendUUID = null;
+
+function openExtendModal(uuid) {
+    _extendUUID = uuid;
+    document.getElementById('extend-uuid-label').textContent = uuid;
+    document.getElementById('extend-days').value = '30';
+    document.getElementById('extend-error').style.display = 'none';
+    document.getElementById('extend-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('extend-days').focus(), 100);
+}
+
+function closeExtendModal() {
+    document.getElementById('extend-modal').style.display = 'none';
+    _extendUUID = null;
+}
+
+async function submitExtend() {
+    const days = parseInt(document.getElementById('extend-days').value);
+    const errEl = document.getElementById('extend-error');
+    const btn = document.getElementById('extend-submit');
+    if (!_extendUUID || isNaN(days) || days <= 0) {
+        errEl.textContent = 'Enter a valid number of days.'; errEl.style.display = 'block'; return;
+    }
+    errEl.style.display = 'none';
+    btn.textContent = 'Extending…'; btn.disabled = true;
+    try {
+        const result = await fetchJson('/api/extend-device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid: _extendUUID, days })
+        });
+        if (result.success) {
+            closeExtendModal();
+            alert(`✅ Expiry extended +${days} days\nNew expiry: ${result.new_expiry}`);
+            renderDevicesView();
+        } else {
+            errEl.textContent = result.error || 'Failed.'; errEl.style.display = 'block';
+        }
+    } catch(e) {
+        errEl.textContent = e.message; errEl.style.display = 'block';
+    } finally {
+        btn.textContent = '✅ Extend'; btn.disabled = false;
+    }
+}
+
+// ── Device Detail Modal (#8) ──────────────────────────────────────────────────
+function showDeviceDetail(k) {
+    const fields = [
+        ['UUID', k.uuid], ['Home Number', k.home_number], ['Status', k.status],
+        ['User ID', k.user_id], ['Expires At', k.expiresAt], ['Approval Mode', k.approvalMode],
+        ['PIN', k.pin], ['Secure Key', k.secure_key], ['Last Seen', k.lastSeen],
+        ['Created At', k.createdAt], ['Source IP', k.sourceIP],
+    ];
+    const html = `<table style="width:100%;border-collapse:collapse;">${fields.map(([label, val]) =>
+        `<tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:8px 12px;color:rgba(255,255,255,0.4);font-size:0.78rem;width:40%;">${escapeHtml(label)}</td>
+            <td style="padding:8px 12px;font-family:monospace;font-size:0.82rem;word-break:break-all;">${escapeHtml(val||'—')}</td>
+        </tr>`
+    ).join('')}</table>`;
+    document.getElementById('device-detail-body').innerHTML = html;
+    document.getElementById('device-detail-modal').style.display = 'flex';
+}
+
+function closeDeviceDetail() {
+    document.getElementById('device-detail-modal').style.display = 'none';
+}
+
+// ── Bulk Actions (#10) ────────────────────────────────────────────────────────
+function getSelectedUUIDs() {
+    return [...document.querySelectorAll('.bulk-chk:checked')].map(c => c.value);
+}
+
+function updateBulkToolbar() {
+    const selected = getSelectedUUIDs();
+    const toolbar = document.getElementById('bulk-toolbar');
+    const count = document.getElementById('bulk-count');
+    if (selected.length > 0) {
+        toolbar.style.display = 'flex';
+        count.textContent = `${selected.length} selected`;
+    } else {
+        toolbar.style.display = 'none';
+    }
+}
+
+function toggleSelectAll(chk) {
+    document.querySelectorAll('.bulk-chk').forEach(c => { c.checked = chk.checked; });
+    updateBulkToolbar();
+}
+
+function clearBulkSelection() {
+    document.querySelectorAll('.bulk-chk').forEach(c => { c.checked = false; });
+    const sa = document.getElementById('bulk-select-all'); if (sa) sa.checked = false;
+    updateBulkToolbar();
+}
+
+async function bulkExtend() {
+    const uuids = getSelectedUUIDs();
+    if (!uuids.length) return;
+    const days = parseInt(prompt(`Extend ${uuids.length} device(s) by how many days?`, '30'));
+    if (isNaN(days) || days <= 0) return;
+    let ok = 0, fail = 0;
+    for (const uuid of uuids) {
+        try {
+            const r = await fetchJson('/api/extend-device', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({uuid, days}) });
+            if (r.success) ok++; else fail++;
+        } catch { fail++; }
+    }
+    clearBulkSelection();
+    alert(`✅ Bulk extend done: ${ok} extended, ${fail} failed.`);
+    renderDevicesView();
+}
+
+async function bulkDisable() {
+    const uuids = getSelectedUUIDs();
+    if (!uuids.length) return;
+    if (!confirm(`Disable ${uuids.length} device(s)?`)) return;
+    let ok = 0, fail = 0;
+    for (const uuid of uuids) {
+        try {
+            const r = await fetchJson('/api/disable', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({uuid, reason:'bulk_disable'}) });
+            if (r.success) ok++; else fail++;
+        } catch { fail++; }
+    }
+    clearBulkSelection();
+    alert(`🚫 Bulk disable done: ${ok} disabled, ${fail} failed.`);
+    renderDevicesView();
+    renderPendingTable();
+}
+
+// ── Audit Log (#7) ────────────────────────────────────────────────────────────
+async function renderAuditLog() {
+    const body = document.getElementById('audit-body');
+    try {
+        const entries = await fetchJson('/api/audit-log');
+        if (!entries || entries.length === 0) {
+            body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-dim);">No audit entries yet</td></tr>`;
+            return;
+        }
+        body.innerHTML = entries.map(e => {
+            const actionColor = {
+                approve: 'var(--green)', disable: 'var(--red)', remove: '#ff4444',
+                transfer: 'var(--gold)', extend_expiry: '#88aaff', reprovision: 'var(--gold)'
+            }[e.action] || 'rgba(255,255,255,0.6)';
+            return `<tr>
+                <td style="font-size:0.78rem;color:var(--text-dim);white-space:nowrap;">${formatTime(e.timestamp)}</td>
+                <td><span style="color:${actionColor};font-weight:bold;font-size:0.82rem;">${escapeHtml(e.action)}</span></td>
+                <td style="font-family:monospace;font-size:0.75rem;">${escapeHtml(e.uuid||'—')}</td>
+                <td style="font-size:0.8rem;">${escapeHtml(e.admin_user||'—')}</td>
+                <td style="font-size:0.78rem;color:var(--text-dim);">${escapeHtml(e.before||'—')}</td>
+                <td style="font-size:0.78rem;">${escapeHtml(e.after||'—')}</td>
+                <td style="font-size:0.78rem;color:var(--text-dim);">${escapeHtml(e.note||'—')}</td>
+            </tr>`;
+        }).join('');
+    } catch(e) {
+        body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);">Error: ${escapeHtml(e.message)}</td></tr>`;
+    }
+}
+
