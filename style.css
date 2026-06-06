@@ -6,19 +6,19 @@
 :root {
     --black:   #0D0D0D;
     --white:   #FFFFFF;
-    --amber:   #F5C518;
+    --amber:   #D99100; /* Richer amber for readability on light background */
 
     /* Semantic aliases */
-    --bg:          #0D0D0D;
-    --surface:     #141414;
-    --surface-2:   #1C1C1C;
-    --border:      rgba(255,255,255,0.10);
-    --border-dark: rgba(255,255,255,0.05);
-    --text:        #FFFFFF;
-    --text-dim:    rgba(255,255,255,0.40);
-    --text-muted:  rgba(255,255,255,0.20);
-    --primary:     #F5C518;
-    --primary-dim: rgba(245,197,24,0.12);
+    --bg:          #FFFFFF;
+    --surface:     #F9F9FB; /* Very light gray/blue for panels */
+    --surface-2:   #F0F0F3;
+    --border:      rgba(0,0,0,0.08);
+    --border-dark: rgba(0,0,0,0.04);
+    --text:        #0D0D0D;
+    --text-dim:    rgba(0,0,0,0.60);
+    --text-muted:  rgba(0,0,0,0.35);
+    --primary:     #D99100;
+    --primary-dim: rgba(217,145,0,0.08);
 
     --radius-sm: 6px;
     --radius:    10px;
@@ -81,7 +81,7 @@ html, body {
     font-size: 0.95rem;
     font-weight: 700;
     letter-spacing: 0.3px;
-    color: var(--white);
+    color: var(--text);
 }
 
 nav {
@@ -106,7 +106,7 @@ nav a {
 }
 
 nav a:hover {
-    color: var(--white);
+    color: var(--text);
     background: var(--surface-2);
 }
 
@@ -176,7 +176,7 @@ header {
 .header-info h2, header h2 {
     font-size: 1.05rem;
     font-weight: 700;
-    color: var(--white);
+    color: var(--text);
     margin-bottom: 2px;
 }
 
@@ -226,12 +226,12 @@ header {
 .stat-value {
     font-size: 1.9rem;
     font-weight: 700;
-    color: var(--white);
+    color: var(--text);
 }
 
 .text-green { color: var(--amber); }   /* repurposed to amber */
 .text-gold  { color: var(--amber); }
-.text-red   { color: rgba(255,255,255,0.55); }
+.text-red   { color: rgba(0,0,0,0.45); }
 
 /* ─── Info / Warning Bar ────────────────────────────────────────────── */
 .info-bar {
@@ -314,12 +314,12 @@ td {
     font-size: 0.855rem;
     border-bottom: 1px solid var(--border-dark);
     vertical-align: middle;
-    color: var(--white);
+    color: var(--text);
 }
 
 tr:last-child td { border-bottom: none; }
 
-tbody tr:hover { background: rgba(255,255,255,0.025); }
+tbody tr:hover { background: rgba(0,0,0,0.02); }
 
 /* ─── Status Badges ─────────────────────────────────────────────────── */
 .status-badge {
@@ -334,8 +334,8 @@ tbody tr:hover { background: rgba(255,255,255,0.025); }
 }
 
 .status-badge.approved,
-.status-badge.online  { color: var(--amber); border-color: rgba(245,197,24,0.4); background: var(--primary-dim); }
-.status-badge.pending { color: var(--white); border-color: var(--border); background: transparent; }
+.status-badge.online  { color: var(--amber); border-color: rgba(217,145,0,0.4); background: var(--primary-dim); }
+.status-badge.pending { color: var(--text-dim); border-color: var(--border); background: transparent; }
 .status-badge.disabled,
 .status-badge.offline { color: var(--text-dim); border-color: var(--border); background: transparent; }
 
@@ -429,7 +429,7 @@ tbody tr:hover { background: rgba(255,255,255,0.025); }
 .detail-value {
     font-size: 1.7rem;
     font-weight: 700;
-    color: var(--white);
+    color: var(--text);
 }
 
 .detail-copy {
@@ -450,7 +450,7 @@ tbody tr:hover { background: rgba(255,255,255,0.025); }
 .settings-select {
     width: 100%;
     background: var(--surface-2);
-    color: var(--white);
+    color: var(--text);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 9px 12px;

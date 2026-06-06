@@ -6,30 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MaainHome | Cloud Command Center</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=2.3.0">
+    <link rel="stylesheet" href="style.css?v=2.4.0">
 </head>
-
+ 
 <body>
     <!-- PIN Lock Gate -->
-    <div id="pin-gate" style="position:fixed;inset:0;background:#0D0D0D;display:flex;align-items:center;justify-content:center;z-index:9999;">
-        <div style="width:340px;background:#141414;border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:32px;display:flex;flex-direction:column;gap:20px;">
+    <div id="pin-gate" style="position:fixed;inset:0;background:#FFFFFF;display:flex;align-items:center;justify-content:center;z-index:9999;">
+        <div style="width:340px;background:#F9F9FB;border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:32px;display:flex;flex-direction:column;gap:20px;">
             <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:32px;height:32px;background:#F5C518;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#0D0D0D;">M</div>
+                <div style="width:32px;height:32px;background:#D99100;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#FFFFFF;">M</div>
                 <div>
-                    <h2 style="margin:0;font-size:0.95rem;font-weight:700;color:#fff;font-family:Outfit,sans-serif;">MaainHome CCC</h2>
-                    <p style="margin:0;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,197,24,0.7);">Admin Access</p>
+                    <h2 style="margin:0;font-size:0.95rem;font-weight:700;color:#0D0D0D;font-family:Outfit,sans-serif;">MaainHome CCC</h2>
+                    <p style="margin:0;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;color:#D99100;">Admin Access</p>
                 </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-                <label style="font-size:0.68rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;">PIN</label>
+                <label style="font-size:0.68rem;color:rgba(0,0,0,0.5);text-transform:uppercase;letter-spacing:0.08em;">PIN</label>
                 <input id="ccc-pin-input" type="password" placeholder="Enter PIN" autofocus
-                    style="background:#1C1C1C;border:1px solid rgba(255,255,255,0.10);border-radius:6px;padding:10px 14px;color:#fff;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;font-family:Outfit,sans-serif;"
+                    style="background:#F0F0F3;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:10px 14px;color:#0D0D0D;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;font-family:Outfit,sans-serif;"
                     onkeydown="if(event.key==='Enter')cccCheckPin()"
                 />
-                <p id="ccc-pin-error" style="display:none;color:rgba(255,255,255,0.5);font-size:0.76rem;">Incorrect PIN. Try again.</p>
+                <p id="ccc-pin-error" style="display:none;color:rgba(0,0,0,0.5);font-size:0.76rem;">Incorrect PIN. Try again.</p>
             </div>
-            <button onclick="cccCheckPin()" style="background:#F5C518;color:#0D0D0D;font-weight:700;border:none;border-radius:6px;padding:10px;font-size:0.88rem;cursor:pointer;font-family:Outfit,sans-serif;">Unlock Dashboard</button>
-            <p style="text-align:center;font-size:0.62rem;color:rgba(255,255,255,0.15);text-transform:uppercase;letter-spacing:0.08em;">MaainHome v2.2.0</p>
+            <button onclick="cccCheckPin()" style="background:#D99100;color:#FFFFFF;font-weight:700;border:none;border-radius:6px;padding:10px;font-size:0.88rem;cursor:pointer;font-family:Outfit,sans-serif;">Unlock Dashboard</button>
+            <p style="text-align:center;font-size:0.62rem;color:rgba(0,0,0,0.25);text-transform:uppercase;letter-spacing:0.08em;">MaainHome v2.2.0</p>
         </div>
     </div>
 
