@@ -46,9 +46,11 @@ var httpClient = &http.Client{Timeout: 10 * time.Second}
 func ToFirestoreDoc(k KioskRecord) FirestoreDoc {
 	fields := map[string]FirestoreValue{
 		"uuid":     {StringValue: k.UUID},
-		"pin":      {StringValue: k.PIN},
 		"status":   {StringValue: k.Status},
 		"lastSeen": {StringValue: k.LastSeen},
+	}
+	if k.PIN != "" {
+		fields["pin"] = FirestoreValue{StringValue: k.PIN}
 	}
 	if k.FirstSeen != "" {
 		fields["firstSeen"] = FirestoreValue{StringValue: k.FirstSeen}
