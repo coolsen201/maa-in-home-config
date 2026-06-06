@@ -3,7 +3,7 @@
 Central admin dashboard for managing MaainHome kiosk devices.
 
 **Live URL:** https://maainhome-ccc.vercel.app  
-**Last Updated:** 2026-06-06
+**Last Updated:** 2026-06-06 (Git Config Update)
 
 ---
 
