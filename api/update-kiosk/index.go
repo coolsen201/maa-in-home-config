@@ -8,9 +8,13 @@ import (
 )
 
 type UpdatePayload struct {
-	UUID       string `json:"uuid"`
-	HomeNumber string `json:"home_number,omitempty"`
-	UserID     string `json:"user_id,omitempty"`
+	UUID        string `json:"uuid"`
+	HomeNumber  string `json:"home_number,omitempty"`
+	UserID      string `json:"user_id,omitempty"`
+	AnyDeskID   string `json:"anydesk_id,omitempty"`
+	AnyDeskPass string `json:"anydesk_pass,omitempty"`
+	PublicIP    string `json:"public_ip,omitempty"`
+	PrivateIP   string `json:"private_ip,omitempty"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +48,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 	if payload.UserID != "" {
 		updates["user_id"] = payload.UserID
+	}
+	if payload.AnyDeskID != "" {
+		updates["anydesk_id"] = payload.AnyDeskID
+	}
+	if payload.AnyDeskPass != "" {
+		updates["anydesk_pass"] = payload.AnyDeskPass
+	}
+	if payload.PublicIP != "" {
+		updates["public_ip"] = payload.PublicIP
+	}
+	if payload.PrivateIP != "" {
+		updates["private_ip"] = payload.PrivateIP
 	}
 
 	if len(updates) == 0 {

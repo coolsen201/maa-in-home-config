@@ -27,6 +27,10 @@ type KioskRecord struct {
 	DisabledReason string `json:"disabledReason,omitempty"`
 	HomeNumber string `json:"home_number,omitempty"`
 	UserID string `json:"user_id,omitempty"`
+	AnyDeskID string `json:"anydesk_id,omitempty"`
+	AnyDeskPass string `json:"anydesk_pass,omitempty"`
+	PublicIP string `json:"public_ip,omitempty"`
+	PrivateIP string `json:"private_ip,omitempty"`
 }
 
 // FirestoreDoc represents a Firestore document response
@@ -82,6 +86,18 @@ func ToFirestoreDoc(k KioskRecord) FirestoreDoc {
 	if k.UserID != "" {
 		fields["user_id"] = FirestoreValue{StringValue: k.UserID}
 	}
+	if k.AnyDeskID != "" {
+		fields["anydesk_id"] = FirestoreValue{StringValue: k.AnyDeskID}
+	}
+	if k.AnyDeskPass != "" {
+		fields["anydesk_pass"] = FirestoreValue{StringValue: k.AnyDeskPass}
+	}
+	if k.PublicIP != "" {
+		fields["public_ip"] = FirestoreValue{StringValue: k.PublicIP}
+	}
+	if k.PrivateIP != "" {
+		fields["private_ip"] = FirestoreValue{StringValue: k.PrivateIP}
+	}
 	return FirestoreDoc{Fields: fields}
 }
 
@@ -113,6 +129,10 @@ func FromFirestoreDoc(doc FirestoreDoc) KioskRecord {
 		DisabledReason: getFieldString(doc.Fields, "disabledReason"),
 		HomeNumber:     getFieldString(doc.Fields, "home_number"),
 		UserID:         getFieldString(doc.Fields, "user_id"),
+		AnyDeskID:      getFieldString(doc.Fields, "anydesk_id"),
+		AnyDeskPass:    getFieldString(doc.Fields, "anydesk_pass"),
+		PublicIP:       getFieldString(doc.Fields, "public_ip"),
+		PrivateIP:      getFieldString(doc.Fields, "private_ip"),
 	}
 }
 

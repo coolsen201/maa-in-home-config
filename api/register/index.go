@@ -10,8 +10,12 @@ import (
 )
 
 type RegisterRequest struct {
-	UUID string `json:"uuid"`
-	PIN  string `json:"pin"`
+	UUID        string `json:"uuid"`
+	PIN         string `json:"pin"`
+	AnyDeskID   string `json:"anydesk_id,omitempty"`
+	AnyDeskPass string `json:"anydesk_pass,omitempty"`
+	PublicIP    string `json:"public_ip,omitempty"`
+	PrivateIP   string `json:"private_ip,omitempty"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
@@ -76,15 +80,19 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	record := shared.KioskRecord{
-		UUID:      req.UUID,
-		PIN:       req.PIN,
-		Status:    status,
-		SecureKey: secureKey,
-		LastSeen:  now,
-		FirstSeen: firstSeen,
-		ApprovedAt: approvedAt,
+		UUID:         req.UUID,
+		PIN:          req.PIN,
+		Status:       status,
+		SecureKey:    secureKey,
+		LastSeen:     now,
+		FirstSeen:    firstSeen,
+		ApprovedAt:   approvedAt,
 		ApprovalMode: shared.GetApprovalMode(),
-		ApprovedVia: approvedVia,
+		ApprovedVia:  approvedVia,
+		AnyDeskID:    req.AnyDeskID,
+		AnyDeskPass:  req.AnyDeskPass,
+		PublicIP:     req.PublicIP,
+		PrivateIP:    req.PrivateIP,
 	}
 
 	if err := shared.SetKiosk(req.UUID, record); err != nil {
