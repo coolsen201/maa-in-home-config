@@ -506,6 +506,9 @@ export function MergedDesign() {
   const [pinApprovalModal, setPinApprovalModal] = useState<{ uuid: string; expectedPin: string } | null>(null);
   const [enteredPin, setEnteredPin] = useState("");
 
+  // Quick Approve State
+  const [localUuid, setLocalUuid] = useState("");
+
   // Remove checklist modal
   const [removeChecklistUUID, setRemoveChecklistUUID] = useState<string | null>(null);
   const [checklistChecks, setChecklistChecks] = useState({
@@ -1469,10 +1472,7 @@ export function MergedDesign() {
                   </div>
                 </div>
 
-                {(() => {
-                  const [localUuid, setLocalUuid] = useState("");
-                  return (
-                    <div>
+                <div>
                       <p style={{ fontSize: 10, fontWeight: 800, color: "#374151", marginBottom: 6, textTransform: "uppercase" }}>DEVICE UUID</p>
                       <div style={{ display: "flex", gap: 10 }}>
                         <input
@@ -1504,9 +1504,7 @@ export function MergedDesign() {
                           <IcoLink color="#fff" size={13} /> FORCE PAIR STATION
                         </button>
                       </div>
-                    </div>
-                  );
-                })()}
+                </div>
               </div>
 
               {/* Linked Stations */}
@@ -2004,7 +2002,7 @@ function PhotoLibrary() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(8, 1fr)",
             gap: 10,
           }}
         >
