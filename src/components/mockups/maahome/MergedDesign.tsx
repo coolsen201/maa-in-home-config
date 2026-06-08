@@ -1265,6 +1265,7 @@ export function MergedDesign() {
 
                         return filtered.map(k => {
                           const isExpired = k.expiresAt && new Date(k.expiresAt) < new Date();
+                          const assignedUser = users.find(u => u.user_id === k.user_id);
                           const statusBg =
                             k.status === "approved"
                               ? isExpired
@@ -1352,7 +1353,9 @@ export function MergedDesign() {
                                   </div>
                                 ) : (
                                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                    <span style={{ fontSize: 11, color: "#4b5563" }}>{k.user_id || "Unclaimed"}</span>
+                                    <span style={{ fontSize: 11, color: "#4b5563" }} title={k.user_id}>
+                                      {assignedUser ? (assignedUser.email || assignedUser.user_id) : (k.user_id || "Unclaimed")}
+                                    </span>
                                     {k.status === "approved" && (
                                       <>
                                         <button
